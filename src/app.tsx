@@ -14,11 +14,9 @@ export const App = () => {
           height={"100%"}
           width={"100%"}
           borderStyle={"round"}
-          borderColor={"green"}
           flexDirection="column"
         >
           <BoardView />
-          <Text> Board view </Text>
         </Box>
       </Box>
     </QueryClientProvider>

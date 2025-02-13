@@ -1,0 +1,93 @@
+import { Box, Text, useInput } from "ink";
+import React, { useRef, useState } from "react";
+import { useStdoutDimensions } from "./useStdoutDimensions.js";
+
+export const SelectModal = ({
+  title,
+  footer,
+  options,
+  onSelect,
+  onClose,
+}: {
+  title: string;
+  footer: string;
+  options: string[];
+  onSelect: (selected: string[]) => void;
+  onClose: () => void;
+}) => {
+  const [focused, setFocused] = useState(0);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [columns, rows] = useStdoutDimensions();
+  const ref = useRef();
+
+  const maxLength = Math.max(
+    ...options.map((option) => option.length + 6),
+    title.length + 6,
+    footer.length + 6,
+  );
+
+  useInput((input, key) => {
+    if (input === "j" || key.downArrow) {
+      setFocused(Math.min(options.length - 1, focused + 1));
+    } else if (input === "k" || key.upArrow) {
+      setFocused(Math.max(0, focused - 1));
+    } else if (input === " ") {
+      if (selected.includes(focused)) {
+        setSelected((selected) => selected.filter((s) => s !== focused));
+      } else {
+        setSelected((selected) => [...selected, focused]);
+      }
+    } else if (key.return) {
+      // biome-ignore lint/style/noNonNullAssertion:
+      onSelect(selected.map((index) => options[index]!));
+      onClose();
+    } else if (input === "q" || key.escape) {
+      onClose();
+    }
+  });
+
+  return (
+    <Box
+      flexDirection="column"
+      position="absolute"
+      borderStyle={"round"}
+      borderColor={"green"}
+      marginLeft={Math.floor((columns - (maxLength + 2)) / 2)}
+      marginTop={Math.floor((rows - (1 + options.length + 2)) / 2)}
+      // @ts-expect-error
+      ref={ref}
+    >
+      <Text>
+        {"   "}
+        {title.padEnd(maxLength - 3, " ")}
+      </Text>
+      {options.map((option, index) => {
+        const text =
+          `   ${index === focused ? "> " : " "}${option} ${selected.includes(index) ? "✓" : " "}`.padEnd(
+            maxLength,
+            " ",
+          );
+
+        return (
+          <Text
+            key={option}
+            color={
+              index === focused
+                ? "blue"
+                : selected.includes(index)
+                  ? "green"
+                  : undefined
+            }
+          >
+            {text}
+          </Text>
+        );
+      })}
+      <Text>{"".padEnd(maxLength, " ")}</Text>
+      <Text color={"blueBright"}>
+        {"   "}
+        {footer.padEnd(maxLength - 3, " ")}
+      </Text>
+    </Box>
+  );
+};

@@ -14,17 +14,21 @@ export const Issue = ({
   storyPoints,
   assigneeName,
   priority,
+  selected,
 }: {
   name: string;
   issueNumber: string;
   storyPoints: number | null;
   assigneeName: string;
   priority: string;
+  selected?: boolean;
 }) => {
   return (
     <Box
-      borderStyle={"round"}
+      borderStyle={selected ? "bold" : "round"}
+      borderColor={selected ? "greenBright" : "white"}
       width={"100%"}
+      minWidth={33}
       flexDirection="column"
       paddingX={1}
       flexShrink={0}

@@ -10,17 +10,19 @@ export const Column = ({
   top,
   hideIssues,
   shouldGrow,
+  selectedIndex,
 }: {
   name: string;
   issues: z.infer<typeof issue>[];
   top: number;
   hideIssues?: boolean;
   shouldGrow?: boolean;
+  selectedIndex?: number;
 }) => {
   return (
     <Box
       borderStyle={"round"}
-      borderColor={"white"}
+      borderColor={selectedIndex !== undefined ? "green" : "white"}
       flexGrow={shouldGrow ? 1 : 0}
       flexBasis={0}
       minWidth={35}
@@ -36,7 +38,7 @@ export const Column = ({
           {hideIssues ? (
             <></>
           ) : (
-            issues.map((issue) => (
+            issues.map((issue, index) => (
               <Issue
                 key={issue.id}
                 name={issue.fields.summary}
@@ -44,6 +46,9 @@ export const Column = ({
                 storyPoints={issue.fields.storyPoints}
                 assigneeName={issue.fields.assignee.displayName}
                 priority={issue.fields.priority.name}
+                selected={
+                  selectedIndex !== undefined && selectedIndex === index
+                }
               />
             ))
           )}
