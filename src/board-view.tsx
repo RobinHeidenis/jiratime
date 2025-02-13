@@ -21,8 +21,8 @@ export const BoardView = () => {
 
   const allUsers = [
     ...new Set(
-        issues?.map((issue) => issue.fields.assignee.displayName),
-      ).values(),
+      issues?.map((issue) => issue.fields.assignee.displayName),
+    ).values(),
   ].filter(Boolean) as string[];
 
   return (
@@ -45,6 +45,7 @@ export const BoardView = () => {
         <SelectModal
           title={"Select users to show issues from:"}
           footer={"Select: <space> | Confirm: <return> | Cancel: q"}
+          selected={filteredUsers.length ? filteredUsers : allUsers}
           options={allUsers}
           onSelect={(selectedUsers) => setFilteredUsers(selectedUsers)}
           onClose={() => setSelectUsersModalOpen(false)}

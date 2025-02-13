@@ -6,17 +6,23 @@ export const SelectModal = ({
   title,
   footer,
   options,
+  selected: initialSelected,
   onSelect,
   onClose,
 }: {
   title: string;
   footer: string;
   options: string[];
+  selected: string[];
   onSelect: (selected: string[]) => void;
   onClose: () => void;
 }) => {
   const [focused, setFocused] = useState(0);
-  const [selected, setSelected] = useState<number[]>([]);
+  const [selected, setSelected] = useState<number[]>(
+    options
+      .map((option, i) => (initialSelected.includes(option) ? i : -1))
+      .filter((i) => i !== -1),
+  );
   const [columns, rows] = useStdoutDimensions();
   const ref = useRef();
 
@@ -38,8 +44,9 @@ export const SelectModal = ({
         setSelected((selected) => [...selected, focused]);
       }
     } else if (key.return || (key.ctrl && input === "y")) {
-      // biome-ignore lint/style/noNonNullAssertion:
-      onSelect(selected.map((index) => options[index]!));
+      onSelect(
+        selected.length ? selected.map((index) => options[index]!) : options,
+      );
       onClose();
     } else if (input === "q" || key.escape) {
       onClose();
