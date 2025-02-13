@@ -64,23 +64,7 @@ const fetchIssues = async () => {
   );
   const issues = issueSchema.parse(response).issues;
 
-  return Object.groupBy(issues, (issue) => {
-    const statusName = issue.fields.status.name.toLowerCase();
-
-    if (statusName === "ready for sprint") {
-      return "to do";
-    }
-
-    if (statusName === "ready to merge") {
-      return "merge to epic";
-    }
-
-    if (statusName === "released") {
-      return "done";
-    }
-
-    return statusName.toLowerCase();
-  });
+  return issues;
 };
 
 export const useIssueQuery = (enabled: boolean) => {

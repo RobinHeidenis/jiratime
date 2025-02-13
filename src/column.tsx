@@ -9,6 +9,7 @@ export const Column = ({
   issues,
   top,
   hideIssues,
+  distanceOffScreen,
   shouldGrow,
   selectedIndex,
 }: {
@@ -16,6 +17,7 @@ export const Column = ({
   issues: z.infer<typeof issue>[];
   top: number;
   hideIssues?: boolean;
+  distanceOffScreen: number;
   shouldGrow?: boolean;
   selectedIndex?: number;
 }) => {
@@ -36,7 +38,24 @@ export const Column = ({
       <Box height={"100%"} overflow="hidden">
         <Box flexDirection="column" marginTop={-top}>
           {hideIssues ? (
-            <></>
+            distanceOffScreen > 0 && distanceOffScreen < 23 ? (
+              <Box flexDirection="column">
+                <Text> </Text>
+                <Text>
+                  {issues.length} issue{issues.length === 1 ? "" : "s"}
+                </Text>
+                {distanceOffScreen < 14 ? (
+                  <Text>Scroll for details</Text>
+                ) : (
+                  <Box flexDirection="column">
+                    <Text>Scroll for</Text>
+                    <Text>details</Text>
+                  </Box>
+                )}
+              </Box>
+            ) : (
+              <></>
+            )
           ) : (
             issues.map((issue, index) => (
               <Issue

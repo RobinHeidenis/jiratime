@@ -27,9 +27,9 @@ export const SelectModal = ({
   );
 
   useInput((input, key) => {
-    if (input === "j" || key.downArrow) {
+    if (input === "j" || key.downArrow || (key.ctrl && input === "n")) {
       setFocused(Math.min(options.length - 1, focused + 1));
-    } else if (input === "k" || key.upArrow) {
+    } else if (input === "k" || key.upArrow || (key.ctrl && input === "p")) {
       setFocused(Math.max(0, focused - 1));
     } else if (input === " ") {
       if (selected.includes(focused)) {
@@ -37,7 +37,7 @@ export const SelectModal = ({
       } else {
         setSelected((selected) => [...selected, focused]);
       }
-    } else if (key.return) {
+    } else if (key.return || (key.ctrl && input === "y")) {
       // biome-ignore lint/style/noNonNullAssertion:
       onSelect(selected.map((index) => options[index]!));
       onClose();

@@ -15,7 +15,7 @@ const boardSchema = z.object({
 
 const fetchBoard = async () => {
   const response = await request(`agile/1.0/board/${env.JIRA_BOARD_ID}/configuration`);
-  return boardSchema.parse(response).columnConfig.columns;
+  return boardSchema.parse(response).columnConfig.columns.map((column) => column.name);
 };
 
 export const useBoardQuery = () => {
