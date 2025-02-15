@@ -37,11 +37,13 @@ export const Board = ({
   issues,
   filteredUsers,
   ignoreInput = false,
+  viewIssue,
 }: {
   columns: string[];
   issues: z.infer<typeof issue>[];
   filteredUsers: string[];
   ignoreInput: boolean;
+  viewIssue: (id: string | null) => void;
 }) => {
   const [width, height] = useStdoutDimensions();
   const [top, setTop] = useState(0);
@@ -96,7 +98,13 @@ export const Board = ({
   useInput((input, key) => {
     if (ignoreInput) return;
 
-    if (input === "j" || key.downArrow) {
+    if (key.return) {
+      const issue = getColumn(
+        groupedIssues,
+        columns[selectedIssue.columnIndex]!,
+      )[selectedIssue.issueIndex];
+      viewIssue(issue?.id ?? null);
+    } else if (input === "j" || key.downArrow) {
       setSelectedIssue((prev) => {
         const newIndex = Math.min(
           getColumn(groupedIssues, columns[prev.columnIndex]!).length - 1,

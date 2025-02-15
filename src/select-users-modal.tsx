@@ -1,8 +1,8 @@
 import { Box, Text, useInput } from "ink";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
-export const SelectModal = ({
+export const SelectUsersModal = ({
   title,
   footer,
   options,
@@ -24,7 +24,6 @@ export const SelectModal = ({
       .filter((i) => i !== -1),
   );
   const [columns, rows] = useStdoutDimensions();
-  const ref = useRef();
 
   const maxLength = Math.max(
     ...options.map((option) => option.length + 6),
@@ -61,8 +60,6 @@ export const SelectModal = ({
       borderColor={"green"}
       marginLeft={Math.floor((columns - (maxLength + 2)) / 2)}
       marginTop={Math.floor((rows - (1 + options.length + 2)) / 2)}
-      // @ts-expect-error
-      ref={ref}
     >
       <Text>
         {"   "}
