@@ -196,8 +196,11 @@ export class ADFRenderer {
       const content = line.substring(level + 1); // Remove stars and first space
       const indentation = "⠀⠀".repeat(level - 1);
       const bulletPoint = "•";
+
       const formattedContent = this.formatLine(
-        this.processStrikethrough(this.processBoldText(content)),
+        this.processStrikethrough(
+          this.processBoldText(this.processLinks(content)),
+        ),
       );
       const formattedLine = `${indentation}${bulletPoint} ${formattedContent}`;
       return this.wrapText(formattedLine);
@@ -205,19 +208,14 @@ export class ADFRenderer {
 
     // Handle regular lines with potential bold text
     const formattedLine = this.formatLine(
-      this.processStrikethrough(this.processBoldText(line)),
+      this.processStrikethrough(this.processBoldText(this.processLinks(line))),
     );
     return this.wrapText(formattedLine);
   }
 
   private wrapText(line: string): string[] {
-    const formattedLine = line
-      .split(" ")
-      .map((word) => this.formatWord(word))
-      .join(" ");
-    //
     // Use wrap-ansi to properly wrap while preserving ANSI codes
-    const wrapped = wrapAnsi(formattedLine, this.maxLineWidth, {
+    const wrapped = wrapAnsi(line, this.maxLineWidth, {
       hard: true,
       wordWrap: true,
       trim: false,
@@ -286,48 +284,50 @@ export class ADFRenderer {
     return line;
   }
 
-  private formatWord(word: string): string {
-    if (this.isSmartLink(word)) {
-      return this.formatSmartLink(word);
+  private processLinks(text: string): string {
+    let result = text;
+    let linkStart = -1;
+    let currentPos = 0;
+
+    while (currentPos < result.length) {
+      if (result[currentPos] === "[") {
+        linkStart = currentPos;
+      } else if (result[currentPos] === "]" && linkStart !== -1) {
+        // We found a complete link pattern
+        const linkText = result.slice(linkStart, currentPos + 1);
+
+        if (linkText.includes("|smart-link")) {
+          // Handle smart link
+          try {
+            const url = linkText.slice(1, linkText.indexOf("|"));
+            const host = new URL(url).host.replace("www.", "");
+            result =
+              result.slice(0, linkStart) +
+              chalk.underline.blue(terminalLink(host, url)) +
+              result.slice(currentPos + 1);
+
+            currentPos = linkStart + host.length;
+          } catch {
+            // If URL parsing fails, leave the link as is
+            currentPos = linkStart + linkText.length;
+          }
+        } else if (linkText.includes("|")) {
+          // Handle normal link
+          const [label, url] = linkText.slice(1, -1).split("|");
+          result =
+            result.slice(0, linkStart) +
+            chalk.underline.blue(terminalLink(label!, url!)) +
+            result.slice(currentPos + 1);
+
+          currentPos = linkStart + label!.length;
+        }
+        linkStart = -1;
+      }
+      currentPos++;
     }
-    if (this.isNormalLink(word)) {
-      return this.formatNormalLink(word);
-    }
-    return word;
-  }
 
-  private isSmartLink(word: string): boolean {
-    return (
-      word.startsWith("[") &&
-      word.endsWith("]") &&
-      word.includes(ADFRenderer.SMART_LINK_IDENTIFIER)
-    );
+    return result;
   }
-
-  private isNormalLink(word: string): boolean {
-    return word.startsWith("[") && word.endsWith("]") && word.includes("|");
-  }
-
-  private formatSmartLink(word: string): string {
-    const url = word.slice(1, word.indexOf("|"));
-    try {
-      return chalk.underline.blue(
-        terminalLink(new URL(url).host.replace("www.", ""), url),
-      );
-    } catch {
-      return url; // Return original URL if parsing fails
-    }
-  }
-
-  private formatNormalLink(word: string): string {
-    try {
-      const [text, url] = word.slice(1, -1).split("|");
-      return chalk.underline.blue(terminalLink(text!, url!));
-    } catch {
-      return word; // Return original word if parsing fails
-    }
-  }
-
   private pad(line: string): string {
     const cleanLength = this.getLength(line);
     const padding = " ".repeat(Math.max(0, this.maxLineWidth - cleanLength));
@@ -335,6 +335,6 @@ export class ADFRenderer {
   }
 
   private getLength(line: string): number {
-    return line.replace(ansiRegex(), "").length;
+    return line.replaceAll(ansiRegex(), "").length;
   }
 }

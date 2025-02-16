@@ -3,7 +3,7 @@ import React from "react";
 import type { z } from "zod";
 import type { issue as issueSchema } from "./api/issue-query.js";
 import { priorityMap } from "./issue.js";
-import { ADFRenderer, ansiRegex } from "./lib/adf-renderer.js";
+import { ADFRenderer } from "./lib/adf-renderer.js";
 import { PaddedText } from "./padded-text.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
@@ -18,15 +18,7 @@ export const ViewIssueModal = ({
     issue.fields.description ?? "No description.",
   );
   const lines = text.length;
-  const paddedText =
-    lines <= 35
-      ? text
-          .map(
-            (line) =>
-              line + " ".repeat(120 - line.replaceAll(ansiRegex(), "").length),
-          )
-          .join("\n")
-      : text.join("\n");
+  const paddedText = text.map((line) => `${line} `).join("\n");
 
   useInput((input, key) => {
     if (lines > 35) {
@@ -66,23 +58,11 @@ export const ViewIssueModal = ({
           borderColor={"green"}
           width={122}
           height={35}
-          overflow="hidden"
+          overflowY="hidden"
         >
           <Box flexDirection="column" marginTop={-topOffset}>
             <Text>{paddedText}</Text>
           </Box>
-          {lines > 35 && (
-            <Box
-              borderStyle={"bold"}
-              borderColor={"greenBright"}
-              width={1}
-              borderTop={false}
-              borderRight={false}
-              borderBottom={false}
-              marginTop={(topOffset * 16) / (lines - 33)}
-              height={17}
-            />
-          )}
         </Box>
       </Box>
       <Box
@@ -109,6 +89,20 @@ export const ViewIssueModal = ({
           <PaddedText key={i} text={""} />
         ))}
       </Box>
+      {lines > 35 && (
+        <Box
+          position="absolute"
+          borderStyle={"bold"}
+          borderColor={"greenBright"}
+          width={1}
+          marginLeft={(columns - width) / 2 - 22}
+          borderTop={false}
+          borderRight={false}
+          borderBottom={false}
+          marginTop={4 + (topOffset * 16) / (lines - 33)}
+          height={17}
+        />
+      )}
     </Box>
   );
 };
