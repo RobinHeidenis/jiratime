@@ -3,7 +3,7 @@ import React from "react";
 import type { z } from "zod";
 import type { issue as issueSchema } from "./api/issue-query.js";
 import { priorityMap } from "./issue.js";
-import { ADFRenderer } from "./lib/adf-renderer.js";
+import { ADFRenderer, ansiRegex } from "./lib/adf-renderer.js";
 import { PaddedText } from "./padded-text.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
@@ -12,8 +12,32 @@ export const ViewIssueModal = ({
   onClose,
 }: { issue: z.infer<typeof issueSchema>; onClose: () => void }) => {
   const [columns, rows] = useStdoutDimensions();
+  const [topOffset, setTopOffset] = React.useState(0);
+
+  const text = new ADFRenderer(119, 33).render(
+    issue.fields.description ?? "No description.",
+  );
+  const lines = text.length;
+  const paddedText =
+    lines <= 35
+      ? text
+          .map(
+            (line) =>
+              line + " ".repeat(120 - line.replaceAll(ansiRegex(), "").length),
+          )
+          .join("\n")
+      : text.join("\n");
 
   useInput((input, key) => {
+    if (lines > 35) {
+      if (input === "j") {
+        setTopOffset((prev) => Math.min(prev + 3, lines - 35));
+      }
+      if (input === "k") {
+        setTopOffset((prev) => Math.max(prev - 3, 0));
+      }
+    }
+
     if (input === "q" || key.escape) {
       onClose();
     }
@@ -21,10 +45,6 @@ export const ViewIssueModal = ({
 
   // title/description + outer borders + assignees + assignee borders
   const width = 122 + 2 + 20 + 2;
-
-  const text = new ADFRenderer(120, 33).render(
-    issue.fields.description ?? "No description.",
-  );
 
   return (
     <Box
@@ -37,16 +57,32 @@ export const ViewIssueModal = ({
       marginTop={(rows - 50) / 2}
     >
       <Box flexDirection="column">
-        <Box borderStyle={"round"} borderColor={"green"} width={122}>
+        <Box borderStyle={"round"} borderColor={"green"} width={122} height={3}>
           <Text>{issue.fields.summary.padEnd(120, " ")}</Text>
+          <Text>{topOffset}</Text>
         </Box>
         <Box
           borderStyle={"round"}
           borderColor={"green"}
           width={122}
-          flexDirection="column"
+          height={35}
+          overflow="hidden"
         >
-          <Text>{text}</Text>
+          <Box flexDirection="column" marginTop={-topOffset}>
+            <Text>{paddedText}</Text>
+          </Box>
+          {lines > 35 && (
+            <Box
+              borderStyle={"bold"}
+              borderColor={"greenBright"}
+              width={1}
+              borderTop={false}
+              borderRight={false}
+              borderBottom={false}
+              marginTop={(topOffset * 16) / (lines - 33)}
+              height={17}
+            />
+          )}
         </Box>
       </Box>
       <Box

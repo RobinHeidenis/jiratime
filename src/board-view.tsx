@@ -36,7 +36,7 @@ export const BoardView = () => {
           columns={columnData}
           issues={issues}
           filteredUsers={filteredUsers.length ? filteredUsers : allUsers}
-          ignoreInput={selectUsersModalOpen}
+          ignoreInput={!!(selectUsersModalOpen || selectedIssue)}
           viewIssue={(id) => setSelectedIssue(id)}
         />
       ) : (
