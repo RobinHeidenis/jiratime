@@ -2,6 +2,7 @@ import { Box, Text, useInput } from "ink";
 import React from "react";
 import type { z } from "zod";
 import type { issue as issueSchema } from "./api/issue-query.js";
+import { env } from "./env.js";
 import { priorityMap } from "./issue.js";
 import { ADFRenderer } from "./lib/adf-renderer.js";
 import { PaddedText } from "./padded-text.js";
@@ -51,7 +52,6 @@ export const ViewIssueModal = ({
       <Box flexDirection="column">
         <Box borderStyle={"round"} borderColor={"green"} width={122} height={3}>
           <Text>{issue.fields.summary.padEnd(120, " ")}</Text>
-          <Text>{topOffset}</Text>
         </Box>
         <Box
           borderStyle={"round"}
@@ -71,23 +71,27 @@ export const ViewIssueModal = ({
         width={22}
         flexDirection="column"
       >
-        <PaddedText text={`\uf292 ${issue.key}`} />
+        <PaddedText text={`\uf292  ${issue.key}`} />
         <PaddedText
-          text={`\uf43a ${issue.fields.storyPoints !== null ? issue.fields.storyPoints : "N/A"}`}
+          text={`\uf43a  ${issue.fields.storyPoints !== null ? issue.fields.storyPoints : "N/A"}`}
         />
         <PaddedText
-          text={`\uf161 ${issue.fields.priority.name}`}
+          text={`\uf161  ${issue.fields.priority.name}`}
           textProps={{
             color: priorityMap[issue.fields.priority.name] ?? "yellow",
           }}
         />
-        <PaddedText text={`\uf007 ${issue.fields.assignee.displayName}`} />
-        <PaddedText text={"\uf121 Idk this one yet"} />
-        <PaddedText text={`\uf50a ${issue.fields.reporter.displayName}`} />
-        {Array.from({ length: 40 - 10 }).map((_, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: We're not actually showing any content, just spaces to override the underlying content
-          <PaddedText key={i} text={""} />
-        ))}
+        <PaddedText text={`\uf007  ${issue.fields.assignee.displayName}`} />
+        {env.DEVELOPER_FIELD && (
+          <PaddedText text={`\uf121  ${issue.fields.developer}`} />
+        )}
+        <PaddedText text={`\uf50a  ${issue.fields.reporter.displayName}`} />
+        {Array.from({ length: 40 + (env.DEVELOPER_FIELD ? 0 : 1) - 10 }).map(
+          (_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: We're not actually showing any content, just spaces to override the underlying content
+            <PaddedText key={i} text={""} />
+          ),
+        )}
       </Box>
       {lines > 35 && (
         <Box

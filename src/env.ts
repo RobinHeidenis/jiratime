@@ -18,6 +18,7 @@ const envVariables = z.object({
   JIRA_BASE_URL: z.string().url(),
   JIRA_BOARD_ID: z.string().or(z.number()),
   STORY_POINTS_FIELD: z.string(),
+  DEVELOPER_FIELD: z.string().optional(),
 });
 
 const mergedConfig = { ...configFileConfig, ...process.env };

@@ -43,6 +43,10 @@ export const issue = z
   .transform((data) => {
     // Get the story points value from the dynamic field
     const storyPoints = (data.fields as DynamicFields)[env.STORY_POINTS_FIELD];
+    let developer: string | null = null;
+    if (env.DEVELOPER_FIELD) {
+      developer = ((data.fields as DynamicFields)[env.DEVELOPER_FIELD] as {displayName: string}).displayName;
+    }
 
     // Return a new object with all the original data plus the transformed storyPoints field
     return {
@@ -50,6 +54,7 @@ export const issue = z
       fields: {
         ...data.fields,
         storyPoints: storyPoints != null ? Number(storyPoints) : null,
+        developer,
       },
     };
   });
@@ -59,8 +64,23 @@ const issueSchema = z.object({
 });
 
 const fetchIssues = async () => {
+  const fields = [
+    "id",
+    "key",
+    "priority",
+    "assignee",
+    "status",
+    "reporter",
+    "issuetype",
+    "sprint",
+    "description",
+    "summary",
+    env.STORY_POINTS_FIELD,
+    env.DEVELOPER_FIELD,
+  ].filter(Boolean);
+
   const response = await request(
-    `agile/1.0/board/${env.JIRA_BOARD_ID}/issue?fields=id,key,priority,assignee,status,reporter,issuetype,sprint,description,summary,${env.STORY_POINTS_FIELD}&jql=status NOT IN ('Need more info') AND sprint in openSprints() ORDER BY Rank ASC&maxResults=200`,
+    `agile/1.0/board/${env.JIRA_BOARD_ID}/issue?fields=${fields.join(",")}&jql=status NOT IN ('Need more info') AND sprint in openSprints() ORDER BY Rank ASC&maxResults=200`,
   );
   const issues = issueSchema.parse(response).issues;
 
