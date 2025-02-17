@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import terminalLink from "terminal-link";
 import wrapAnsi from "wrap-ansi";
+import { env } from "../env.js";
 
 export const ansiRegex = ({ onlyFirst = false } = {}) => {
   // Valid string terminator sequences are BEL, ESC\, and 0x9c
@@ -130,62 +131,10 @@ export class ADFRenderer {
   }
 
   private processStrikethrough(text: string): string {
-    let result = text;
-    const strikePositions: number[] = [];
-
-    // Find valid strike positions (preceded by space or start of line)
-    let pos = 0;
-    while ((pos = result.indexOf("-", pos)) !== -1) {
-      // Check if dash is at start of line or preceded by space
-      const isValidStart = pos === 0 || result[pos - 1] === " ";
-      // Skip if we're inside a link
-      const beforeText = result.substring(0, pos);
-      const openBrackets = (beforeText.match(/\[/g) || []).length;
-      const closeBrackets = (beforeText.match(/\]/g) || []).length;
-      const isInsideLink = openBrackets > closeBrackets;
-
-      if (isValidStart && !isInsideLink) {
-        strikePositions.push(pos);
-      }
-      pos++;
-    }
-
-    // Process pairs of dashes from right to left
-    for (let i = strikePositions.length - 1; i > 0; i--) {
-      for (let j = i - 1; j >= 0; j--) {
-        // Check if this pair of dashes is already processed
-        if (
-          result[strikePositions[i]!] === "-" &&
-          result[strikePositions[j]!] === "-"
-        ) {
-          // Verify the ending dash is followed by space or end of line
-          const isValidEnd =
-            strikePositions[i] === result.length - 1 ||
-            result[strikePositions[i]! + 1] === " " ||
-            result[strikePositions[i]! + 1] === "\n";
-
-          if (isValidEnd) {
-            // Extract the text between dashes
-            const beforeStrike = result.substring(0, strikePositions[j]);
-            const betweenStrikes = result.substring(
-              strikePositions[j]! + 1,
-              strikePositions[i],
-            );
-            const afterStrike = result.substring(strikePositions[i]! + 1);
-
-            // Replace with strikethrough text
-            result =
-              beforeStrike + chalk.strikethrough(betweenStrikes) + afterStrike;
-
-            // Mark these dashes as processed
-            strikePositions[i] = -1;
-            strikePositions[j] = -1;
-            break;
-          }
-        }
-      }
-    }
-
+    const pattern = /(?:^|\s)-([^-]+)-(?:\s|$)/g;
+    const result = text.replace(pattern, (_, group1) => {
+      return ` ${chalk.strikethrough(group1)} `;
+    });
     return result;
   }
   private renderLine(line: string): string[] {
@@ -296,11 +245,16 @@ export class ADFRenderer {
         // We found a complete link pattern
         const linkText = result.slice(linkStart, currentPos + 1);
 
-        if (linkText.includes("|smart-link")) {
+        if (linkText.includes(ADFRenderer.SMART_LINK_IDENTIFIER)) {
           // Handle smart link
           try {
             const url = linkText.slice(1, linkText.indexOf("|"));
-            const host = new URL(url).host.replace("www.", "");
+            let host = new URL(url).host.replace("www.", "");
+
+            if (host === new URL(env.JIRA_BASE_URL).host) {
+              host = url.split("/").at(-1)!;
+            }
+
             result =
               result.slice(0, linkStart) +
               chalk.underline.blue(terminalLink(host, url)) +
