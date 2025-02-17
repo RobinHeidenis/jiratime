@@ -11,29 +11,28 @@ type DynamicFields = {
 export const issue = z
   .object({
     id: z.string(),
-    self: z.string(),
     key: z.string(),
     fields: z
       .object({
         summary: z.string(),
-        sprint: z.object({
-          name: z.string(),
-        }),
-        description: z.string().nullable(),
+        description: z
+          .object({
+            content: z.array(z.unknown()),
+          })
+          .nullable(),
         reporter: z.object({
           displayName: z.string(),
         }),
-        assignee: z.object({
-          displayName: z.string(),
-        }),
+        assignee: z
+          .object({
+            displayName: z.string(),
+          })
+          .nullable(),
         priority: z.object({
           name: z.string(),
         }),
         status: z.object({
-          name: z.string(),
-          statusCategory: z.object({
-            name: z.string(),
-          }),
+          id: z.string(),
         }),
       })
       .and(
@@ -45,7 +44,12 @@ export const issue = z
     const storyPoints = (data.fields as DynamicFields)[env.STORY_POINTS_FIELD];
     let developer: string | null = null;
     if (env.DEVELOPER_FIELD) {
-      developer = ((data.fields as DynamicFields)[env.DEVELOPER_FIELD] as {displayName: string}).displayName;
+      developer =
+        (
+          (data.fields as DynamicFields)[env.DEVELOPER_FIELD] as {
+            displayName: string | undefined;
+          }
+        )?.displayName ?? null;
     }
 
     // Return a new object with all the original data plus the transformed storyPoints field
@@ -55,15 +59,19 @@ export const issue = z
         ...data.fields,
         storyPoints: storyPoints != null ? Number(storyPoints) : null,
         developer,
+        assignee: {
+          displayName: data.fields.assignee?.displayName ?? "Unassigned",
+        },
       },
     };
   });
 
 const issueSchema = z.object({
   issues: z.array(issue),
+  nextPageToken: z.string().optional(),
 });
 
-const fetchIssues = async () => {
+const fetchIssues = async (jql: string) => {
   const fields = [
     "id",
     "key",
@@ -72,26 +80,32 @@ const fetchIssues = async () => {
     "status",
     "reporter",
     "issuetype",
-    "sprint",
     "description",
     "summary",
     env.STORY_POINTS_FIELD,
     env.DEVELOPER_FIELD,
   ].filter(Boolean);
 
-  const response = await request(
-    `agile/1.0/board/${env.JIRA_BOARD_ID}/issue?fields=${fields.join(",")}&jql=status NOT IN ('Need more info') AND sprint in openSprints() ORDER BY Rank ASC&maxResults=200`,
-  );
-  const issues = issueSchema.parse(response).issues;
+  let nextPageToken: string | undefined = undefined;
+  let allIssues: z.infer<typeof issue>[] = [];
 
-  return issues;
+  do {
+    const response = await request(
+      `/api/3/search/jql?jql=${env.boards?.[Number(env.JIRA_BOARD_ID)]?.jqlPrefix} ${jql}&fields=${fields.join(",")}&maxResults=200${nextPageToken ? `&nextPageToken=${nextPageToken}` : ""}`,
+    );
+
+    const parsed = issueSchema.parse(response);
+    allIssues = allIssues.concat(parsed.issues);
+    nextPageToken = parsed.nextPageToken;
+  } while (nextPageToken);
+  return allIssues;
 };
 
-export const useIssueQuery = (enabled: boolean) => {
+export const useIssueQuery = (jql: string | undefined) => {
   return useQuery({
     queryKey: ["issues"],
-    queryFn: fetchIssues,
-    enabled,
+    queryFn: () => fetchIssues(jql!),
+    enabled: jql !== undefined,
     refetchOnReconnect: false,
     refetchInterval: false,
   });

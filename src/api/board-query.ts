@@ -1,21 +1,42 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { request } from "./request.js";
 import { env } from "../env.js";
+import { request } from "./request.js";
 
 const boardSchema = z.object({
   columnConfig: z.object({
     columns: z.array(
       z.object({
         name: z.string(),
+        statuses: z.array(z.object({ id: z.string() })),
       }),
     ),
   }),
+  filter: z.object({
+    id: z.string(),
+  }),
+});
+
+const filter = z.object({
+  jql: z.string(),
+});
+
+export const boardWithFilter = boardSchema.extend({
+  filter,
 });
 
 const fetchBoard = async () => {
-  const response = await request(`agile/1.0/board/${env.JIRA_BOARD_ID}/configuration`);
-  return boardSchema.parse(response).columnConfig.columns.map((column) => column.name);
+  const boardResponse = await request(
+    `agile/1.0/board/${env.JIRA_BOARD_ID}/configuration`,
+  );
+  const board = boardSchema.parse(boardResponse);
+
+  const filterResponse = await request(`api/3/filter/${board.filter.id}`);
+
+  return {
+    ...board,
+    filter: filter.parse(filterResponse),
+  };
 };
 
 export const useBoardQuery = () => {

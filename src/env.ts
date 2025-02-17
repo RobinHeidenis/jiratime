@@ -19,6 +19,7 @@ const envVariables = z.object({
   JIRA_BOARD_ID: z.string().or(z.number()),
   STORY_POINTS_FIELD: z.string(),
   DEVELOPER_FIELD: z.string().optional(),
+  boards: z.record(z.object({ jqlPrefix: z.string() })).optional(),
 });
 
 const mergedConfig = { ...configFileConfig, ...process.env };

@@ -15,9 +15,7 @@ export const ViewIssueModal = ({
   const [columns, rows] = useStdoutDimensions();
   const [topOffset, setTopOffset] = React.useState(0);
 
-  const text = new ADFRenderer(119, 33).render(
-    issue.fields.description ?? "No description.",
-  );
+  const text = ["NO DESCRIPTION YET :D"];
   const lines = text.length;
   const paddedText = text.map((line) => `${line} `).join("\n");
 

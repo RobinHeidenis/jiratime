@@ -1,28 +1,47 @@
 import { Box, Text, useInput } from "ink";
 import React, { useCallback, useState } from "react";
 import type { z } from "zod";
+import type { boardWithFilter } from "./api/board-query.js";
 import type { issue } from "./api/issue-query.js";
 import { Column } from "./column.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
-const groupIssuesByColumn = (issues: z.infer<typeof issue>[]) => {
-  return Object.groupBy(issues, (issue) => {
-    const statusName = issue.fields.status.name.toLowerCase();
+const groupIssuesByColumn = (
+  issues: z.infer<typeof issue>[],
+  columnConfig: { name: string; statuses: { id: string }[] }[],
+) => {
+  const statusMap = columnConfig.reduce(
+    (acc, column) => {
+      for (const status of column.statuses) {
+        acc[status.id] = column.name;
+      }
 
-    if (statusName === "ready for sprint") {
-      return "to do";
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
+
+  const columns: Record<string, z.infer<typeof issue>[]> = {};
+
+  for (const column of columnConfig) {
+    columns[column.name.toLowerCase()] = [];
+  }
+
+  for (const issue of issues) {
+    const columnName = statusMap[issue.fields.status.id];
+
+    if (!columnName) {
+      continue;
     }
 
-    if (statusName === "ready to merge") {
-      return "merge to epic";
-    }
+    const column = columns[columnName.toLowerCase()];
 
-    if (statusName === "released") {
-      return "done";
+    if (column) {
+      column.push(issue);
     }
+  }
 
-    return statusName.toLowerCase();
-  });
+  return columns;
 };
 
 const getColumn = (
@@ -33,13 +52,13 @@ const getColumn = (
 };
 
 export const Board = ({
-  columns,
+  boardConfiguration,
   issues,
   filteredUsers,
   ignoreInput = false,
   viewIssue,
 }: {
-  columns: string[];
+  boardConfiguration: z.infer<typeof boardWithFilter>;
   issues: z.infer<typeof issue>[];
   filteredUsers: string[];
   ignoreInput: boolean;
@@ -53,11 +72,16 @@ export const Board = ({
     issueIndex: number;
   }>({ columnIndex: 0, issueIndex: 0 });
 
+  const columns = boardConfiguration.columnConfig.columns.map((c) => c.name);
+
   const filteredIssues = issues.filter((issue) =>
     filteredUsers.includes(issue.fields.assignee.displayName),
   );
 
-  const groupedIssues = groupIssuesByColumn(filteredIssues);
+  const groupedIssues = groupIssuesByColumn(
+    filteredIssues,
+    boardConfiguration.columnConfig.columns,
+  );
   const maxIssueCount = groupedIssues
     ? Math.max(
         ...Object.values(groupedIssues).map((issues) =>
