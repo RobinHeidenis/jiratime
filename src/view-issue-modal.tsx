@@ -5,6 +5,7 @@ import type { issue as issueSchema } from "./api/issue-query.js";
 import { env } from "./env.js";
 import { priorityMap } from "./issue.js";
 import { ADFRenderer } from "./lib/adf-renderer.js";
+import type { TopLevelNode } from "./lib/nodes.js";
 import { PaddedText } from "./padded-text.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
@@ -15,14 +16,18 @@ export const ViewIssueModal = ({
   const [columns, rows] = useStdoutDimensions();
   const [topOffset, setTopOffset] = React.useState(0);
 
-  const text = ["NO DESCRIPTION YET :D"];
-  const lines = text.length;
-  const paddedText = text.map((line) => `${line} `).join("\n");
+  const description = issue.fields.description
+    ? new ADFRenderer(119, 33).render(
+        issue.fields.description.content as TopLevelNode[],
+      )
+    : ["No description."];
+  const lines = description.length;
+  const paddedText = description.map((line) => `${line} `).join("\n");
 
   useInput((input, key) => {
     if (lines > 35) {
       if (input === "j") {
-        setTopOffset((prev) => Math.min(prev + 3, lines - 35));
+        setTopOffset((prev) => Math.min(prev + 3, lines - 33));
       }
       if (input === "k") {
         setTopOffset((prev) => Math.max(prev - 3, 0));

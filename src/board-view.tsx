@@ -7,8 +7,8 @@ import { SelectUsersModal } from "./select-users-modal.js";
 import { ViewIssueModal } from "./view-issue-modal.js";
 
 export const BoardView = () => {
-  const { data: board, error: boardError } = useBoardQuery();
-  const { data: issues, error: issueError } = useIssueQuery(board?.filter.jql);
+  const { data: board } = useBoardQuery();
+  const { data: issues } = useIssueQuery(board?.filter.jql);
   const [selectUsersModalOpen, setSelectUsersModalOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
   const [filteredUsers, setFilteredUsers] = useState<string[]>([]);
@@ -25,14 +25,12 @@ export const BoardView = () => {
     ...new Set(
       issues?.map((issue) => issue.fields.assignee.displayName),
     ).values(),
-  ].filter(Boolean) as string[];
+  ].filter((user) => user && user !== "Unassigned") as string[];
 
   const viewIssue = issues?.find((issue) => issue.id === selectedIssue);
 
   return (
     <>
-      <Text> {boardError?.message}</Text>
-      <Text> {issueError?.message}</Text>
       {board && issues ? (
         <Board
           boardConfiguration={board}
