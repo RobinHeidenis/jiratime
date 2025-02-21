@@ -84,7 +84,7 @@ export class ADFRenderer {
       case "bulletList":
         return this.bulletList(node);
       case "codeBlock":
-        return [];
+        return this.codeBlock(node);
       case "expand":
         return [];
       case "heading":
@@ -96,7 +96,7 @@ export class ADFRenderer {
       case "orderedList":
         return this.orderedList(node);
       case "panel":
-        return [];
+        return this.panel(node);
       case "paragraph":
         return this.paragraph(node);
       case "rule":
@@ -143,20 +143,50 @@ export class ADFRenderer {
   }
 
   private blockQuote(node: BlockQuoteNode) {
+    const renderer = new ADFRenderer(this.maxLineWidth - 2, this.minimumLines);
     return node.content.flatMap((content) =>
-      this.renderTopLevelNode(content).flatMap(
-        (line) => `${chalk.white.dim("> ")}${line}`,
-      ),
+      renderer
+        .renderTopLevelNode(content)
+        .flatMap((line) => `${chalk.white.dim("> ")}${line}`),
     );
   }
 
   private bulletList(node: BulletListNode, level = 0): string[] {
-    return node.content.flatMap((li) => {
+    const nodes = node.content.flatMap((li) => {
       return this.listItem(li, level);
     });
+
+    if (level === 0) {
+      nodes.push(this.pad(""));
+    }
+
+    return nodes;
   }
 
-  private codeBlock(node: CodeBlockNode) {}
+  private codeBlock(node: CodeBlockNode) {
+    const maxLineNumber = (node.content ?? []).length.toString().length;
+    const textContent =
+      node.content?.flatMap((content) => {
+        return content.text.split("\n");
+      }) ?? [];
+    const maxLineLength = Math.max(
+      ...(textContent?.map((line) => line.length) ?? []),
+    );
+
+    const nodes =
+      textContent.map((line, i) => {
+        const lineNumber = `${i + 1}`.padStart(maxLineNumber, " ");
+        return this.pad(
+          chalk.bgHex("#364153")(
+            ` ${chalk.gray(lineNumber)} ${line.padEnd(maxLineLength, " ")} `,
+          ),
+        );
+      }) ?? [];
+
+    nodes.push(this.pad(""));
+
+    return nodes;
+  }
 
   private date(node: DateNode) {
     const date = new Date(Number(node.attrs.timestamp));
@@ -232,7 +262,19 @@ export class ADFRenderer {
           }
         }
       } else if (content.type === "mediaSingle") {
-        nodes.push(...this.mediaSingle(content));
+        nodes.push(
+          ...this.mediaSingle(content).map(
+            (line) => ` ${"  ".repeat(level)} ${line}`,
+          ),
+        );
+      } else if (content.type === "codeBlock") {
+        const lines = this.codeBlock(content);
+        const firstLine = lines.shift();
+        const prefix = ` ${"  ".repeat(level)} `;
+        nodes.push(`${prefix}• ${firstLine!.trim()}`);
+        nodes.push(
+          ...lines.map((line) => ` ${"  ".repeat(level + 1)} ${line.trim()}`),
+        );
       } else {
         nodes.push("UNSUPPORTED ELEMENT");
       }
@@ -269,7 +311,47 @@ export class ADFRenderer {
     });
   }
 
-  private panel(node: PanelNode) {}
+  private panel(node: PanelNode): string[] {
+    const renderer = new ADFRenderer(this.maxLineWidth - 2, this.minimumLines);
+    const panelContent = node.content.flatMap((content) => {
+      return renderer.renderTopLevelNode(content);
+    });
+
+    const maxContentLength = Math.max(
+      ...(panelContent.map((content) => content.trim().length) ?? []),
+    );
+
+    const iconMap = {
+      info: "\uf05a",
+      note: "\uf15c",
+      warning: "\uf071",
+      success: "\uf058",
+      error: "\uf530",
+    } satisfies Record<PanelNode["attrs"]["panelType"], string>;
+
+    const colorMap = {
+      info: chalk.bgHex("#155dfc"),
+      note: chalk.bgHex("#ad46ff"),
+      warning: chalk.bgHex("#fd9a00").black,
+      success: chalk.bgHex("#497D00"),
+      error: chalk.bgRedBright,
+    } satisfies Record<PanelNode["attrs"]["panelType"], ChalkInstance>;
+
+    panelContent.unshift(
+      `${iconMap[node.attrs.panelType]} ${node.attrs.panelType.slice(0, 1).toUpperCase()}${node.attrs.panelType.slice(1)}`,
+    );
+    const nodes = panelContent.map((content) => {
+      return this.pad(
+        colorMap[node.attrs.panelType](
+          ` ${content.trim().padEnd(maxContentLength, " ")} `,
+        ),
+      );
+    });
+
+    nodes.push(this.pad(""));
+
+    return nodes;
+  }
 
   private paragraph(node: ParagraphNode): string[] {
     if (!node.content) {
