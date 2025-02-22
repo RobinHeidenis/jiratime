@@ -43,7 +43,7 @@ export const BoardView = () => {
         <Text>Loading...</Text>
       )}
       <Box width={"100%"}>
-        <Text> Filter users: u</Text>
+        <Text> Filter users: u | Open: o</Text>
       </Box>
 
       {selectUsersModalOpen && (

@@ -1,9 +1,11 @@
 import { Box, Text, useInput } from "ink";
+import open from "open";
 import React, { useCallback, useState } from "react";
 import type { z } from "zod";
 import type { boardWithFilter } from "./api/board-query.js";
 import type { issue } from "./api/issue-query.js";
 import { Column } from "./column.js";
+import { env } from "./env.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
 const groupIssuesByColumn = (
@@ -142,6 +144,13 @@ export const Board = ({
           issueIndex: newIndex,
         };
       });
+    } else if (input === "o") {
+      const issue = getColumn(
+        groupedIssues,
+        columns[selectedIssue.columnIndex]!,
+      )[selectedIssue.issueIndex];
+
+      open(`${env.JIRA_BASE_URL}/browse/${issue?.key}`);
     } else if (input === "k" || key.upArrow) {
       setSelectedIssue((prev) => {
         const newIndex = Math.max(0, prev.issueIndex - 1);
