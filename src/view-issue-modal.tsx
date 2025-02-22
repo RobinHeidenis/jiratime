@@ -16,11 +16,17 @@ export const ViewIssueModal = ({
   const [columns, rows] = useStdoutDimensions();
   const [topOffset, setTopOffset] = React.useState(0);
 
-  const description = issue.fields.description
-    ? new ADFRenderer(119, 33).render(
-        issue.fields.description.content as TopLevelNode[],
-      )
-    : ["No description."];
+  const description = new ADFRenderer(119, 33).render(
+    issue.fields.description?.content?.length
+      ? (issue.fields.description.content as TopLevelNode[])
+      : [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "No description." }],
+          },
+        ],
+  );
+
   const lines = description.length;
   const paddedText = description.map((line) => `${line} `).join("\n");
 

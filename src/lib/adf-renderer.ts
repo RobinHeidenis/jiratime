@@ -142,9 +142,9 @@ export class ADFRenderer {
     return string;
   }
 
-  public pad(line: string): string {
+  public pad(line: string, maxLength = this.maxLineWidth): string {
     const cleanLength = this.getLength(line);
-    const padding = " ".repeat(Math.max(0, this.maxLineWidth - cleanLength));
+    const padding = " ".repeat(Math.max(0, maxLength - cleanLength));
     return `${line}${padding}`;
   }
 
@@ -354,7 +354,7 @@ export class ADFRenderer {
     });
 
     const maxContentLength = Math.max(
-      ...(panelContent.map((content) => content.trim().length) ?? []),
+      ...(panelContent.map((content) => this.getLength(content)) ?? []),
     );
 
     const iconMap = {
@@ -377,10 +377,8 @@ export class ADFRenderer {
       `${iconMap[node.attrs.panelType]} ${node.attrs.panelType.slice(0, 1).toUpperCase()}${node.attrs.panelType.slice(1)}`,
     );
     const nodes = panelContent.map((content) => {
-      return this.pad(
-        colorMap[node.attrs.panelType](
-          ` ${content.trim().padEnd(maxContentLength, " ")} `,
-        ),
+      return colorMap[node.attrs.panelType](
+        ` ${this.pad(content, maxContentLength)} `,
       );
     });
 
