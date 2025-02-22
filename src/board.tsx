@@ -6,6 +6,7 @@ import type { boardWithFilter } from "./api/board-query.js";
 import type { issue } from "./api/issue-query.js";
 import { Column } from "./column.js";
 import { env } from "./env.js";
+import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
 const groupIssuesByColumn = (
@@ -51,6 +52,16 @@ const getColumn = (
   columnName: string,
 ) => {
   return groupedIssues[columnName.toLowerCase()] ?? [];
+};
+
+const getSelectedIssue = (
+  groupedIssues: Partial<Record<string, z.infer<typeof issue>[]>>,
+  columns: string[],
+  selectedIssue: { columnIndex: number; issueIndex: number },
+) => {
+  return getColumn(groupedIssues, columns[selectedIssue.columnIndex]!)[
+    selectedIssue.issueIndex
+  ];
 };
 
 export const Board = ({
@@ -125,11 +136,16 @@ export const Board = ({
     if (ignoreInput) return;
 
     if (key.return) {
+      const issue = getSelectedIssue(groupedIssues, columns, selectedIssue);
+
+      viewIssue(issue?.id ?? null);
+    } else if (input === "o") {
       const issue = getColumn(
         groupedIssues,
         columns[selectedIssue.columnIndex]!,
       )[selectedIssue.issueIndex];
-      viewIssue(issue?.id ?? null);
+
+      openIssueInBrowser(issue?.key ?? "");
     } else if (input === "j" || key.downArrow) {
       setSelectedIssue((prev) => {
         const newIndex = Math.min(
@@ -144,13 +160,6 @@ export const Board = ({
           issueIndex: newIndex,
         };
       });
-    } else if (input === "o") {
-      const issue = getColumn(
-        groupedIssues,
-        columns[selectedIssue.columnIndex]!,
-      )[selectedIssue.issueIndex];
-
-      open(`${env.JIRA_BASE_URL}/browse/${issue?.key}`);
     } else if (input === "k" || key.upArrow) {
       setSelectedIssue((prev) => {
         const newIndex = Math.max(0, prev.issueIndex - 1);
