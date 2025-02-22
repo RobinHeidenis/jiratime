@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Box, Text, measureElement } from "ink";
-import React, { useEffect, useRef, useState } from "react";
+import { Box, Text } from "ink";
+import React from "react";
 import { BoardView } from "./board-view.js";
 
 const queryClient = new QueryClient();
