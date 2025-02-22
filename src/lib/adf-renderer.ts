@@ -2,6 +2,7 @@ import chalk, { type ChalkInstance } from "chalk";
 import { format } from "date-fns";
 import terminalLink from "terminal-link";
 import wrapAnsi from "wrap-ansi";
+import { env } from "../env.js";
 import type { Mark } from "./marks.js";
 import type {
   BlockQuoteNode,
@@ -244,8 +245,14 @@ export class ADFRenderer {
     const url = node.attrs.url;
 
     if (!url) return typeof node.attrs.data === "string" ? node.attrs.data : "";
+
     return chalk.underline.blue(
-      terminalLink(new URL(url).hostname.replace("www.", ""), url),
+      terminalLink(
+        url.includes(env.JIRA_BASE_URL)
+          ? url.split("/").at(-1)!
+          : new URL(url).hostname.replace("www.", ""),
+        url,
+      ),
     );
   }
 
