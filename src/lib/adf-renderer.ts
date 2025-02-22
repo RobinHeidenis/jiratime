@@ -256,7 +256,14 @@ export class ADFRenderer {
     );
   }
 
-  private listItem(node: ListItemNode, level = 0): string[] {
+  private listItem(
+    node: ListItemNode,
+    level = 0,
+    options?: {
+      ordered?: boolean;
+      number?: number;
+    },
+  ): string[] {
     if (!node.content) {
       return [];
     }
@@ -268,14 +275,28 @@ export class ADFRenderer {
       } else if (content.type === "orderedList") {
         nodes.push(...this.orderedList(content, level + 1));
       } else if (content.type === "paragraph") {
-        const prefix = ` ${"  ".repeat(level)}• `;
+        // Create level indicators with gray bullets
+        const levelIndicators =
+          level > 0 ? `${chalk.hex("#404040")("• ".repeat(level))}` : "";
+
+        // Calculate prefix based on whether it's ordered or unordered
+        let prefix: string;
+        if (options?.ordered) {
+          // For ordered lists, include the number
+          const numberStr = `${options.number}.`;
+          prefix = ` ${levelIndicators}${numberStr} `;
+        } else {
+          // For unordered lists, use bullet point
+          prefix = ` ${levelIndicators}• `;
+        }
+
         const indentation = " ".repeat(prefix.length);
         const text = this.renderInlineNodes(content.content || []);
 
         // Calculate available width for text
         const availableWidth = this.maxLineWidth - prefix.length;
 
-        // Wrap the entire text as one piece
+        // Wrap the text
         const wrapped = wrapAnsi(text, availableWidth, {
           hard: true,
           wordWrap: true,
@@ -285,7 +306,7 @@ export class ADFRenderer {
         // Process wrapped lines
         const lines = wrapped.split("\n");
         if (lines.length > 0) {
-          // First line gets the bullet point
+          // First line gets the number/bullet with level indicators
           nodes.push(`${prefix}${lines[0]}`);
 
           // Subsequent lines get indentation
@@ -349,8 +370,12 @@ export class ADFRenderer {
   }
 
   private orderedList(node: OrderedListNode, level = 0): string[] {
-    return node.content.flatMap((li) => {
-      return this.listItem(li, level);
+    const startNumber = node.attrs?.order || 1;
+    return node.content.flatMap((li, index) => {
+      return this.listItem(li, level, {
+        ordered: true,
+        number: startNumber + index,
+      });
     });
   }
 
