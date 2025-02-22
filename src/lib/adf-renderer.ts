@@ -171,18 +171,18 @@ export class ADFRenderer {
   }
 
   private codeBlock(node: CodeBlockNode) {
-    const maxLineNumber = (node.content ?? []).length.toString().length;
     const textContent =
       node.content?.flatMap((content) => {
         return content.text.split("\n");
       }) ?? [];
+    const maxLineNumber = (textContent ?? []).length.toString().length;
     const maxLineLength = Math.max(
       ...(textContent?.map((line) => line.length) ?? []),
     );
 
     const nodes =
       textContent.map((line, i) => {
-        const lineNumber = `${i + 1}`.padStart(maxLineNumber, " ");
+        const lineNumber = `${i + 1}`.padStart(maxLineNumber, "⠀");
         return this.pad(
           chalk.bgHex("#364153")(
             ` ${chalk.gray(lineNumber)} ${line.padEnd(maxLineLength, " ")} `,
