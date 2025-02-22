@@ -214,7 +214,11 @@ export class ADFRenderer {
       })
       .map((line) => `  ${line}`);
 
-    nodes.unshift(this.pad(`\uf078 ${node.attrs.title || "Expand"}`));
+    nodes.unshift(
+      this.pad(
+        `\uf078 ${this.wrapWithMarkStyling(node.attrs.title || "Expand", node.marks)}`,
+      ),
+    );
     nodes.push(this.pad(""));
 
     return nodes;
@@ -344,7 +348,7 @@ export class ADFRenderer {
   }
 
   private panel(node: PanelNode): string[] {
-    const renderer = new ADFRenderer(this.maxLineWidth - 2, this.minimumLines);
+    const renderer = new ADFRenderer(this.maxLineWidth - 4, this.minimumLines);
     const panelContent = node.content.flatMap((content) => {
       return renderer.renderTopLevelNode(content);
     });
@@ -391,11 +395,12 @@ export class ADFRenderer {
     }
 
     const text = this.renderInlineNodes(node.content);
-    return wrapAnsi(text, this.maxLineWidth, {
+    const wrapped = wrapAnsi(text, this.maxLineWidth, {
       hard: true,
       wordWrap: true,
       trim: false,
-    }).split("\n");
+    });
+    return wrapped.split("\n");
   }
 
   private rule(_node: RuleNode): string[] {
@@ -424,11 +429,44 @@ export class ADFRenderer {
   private tableRow(node: TableRowNode) {}
 
   private text(node: TextNode) {
-    return node.text;
+    return this.wrapWithMarkStyling(node.text, node.marks);
   }
 
-  private wrapWithMarkStyling(text: string, marks: Mark[]): string {
-    return text;
+  private wrapWithMarkStyling(text: string, marks: Mark[] = []): string {
+    let markedText = text;
+
+    for (const mark of marks) {
+      switch (mark.type) {
+        case "underline":
+          markedText = chalk.underline(markedText);
+          break;
+        case "strong":
+          markedText = chalk.bold(markedText);
+          break;
+        case "em":
+          markedText = chalk.italic(markedText);
+          break;
+        case "strike":
+          markedText = chalk.strikethrough(markedText);
+          break;
+        case "textColor":
+          markedText = chalk.hex(mark.attrs.color)(markedText);
+          break;
+        case "backgroundColor":
+          markedText = chalk.bgHex(mark.attrs.color)(markedText);
+          break;
+        case "link":
+          markedText = chalk.underline.blue(
+            terminalLink(markedText, mark.attrs.href),
+          );
+          break;
+        case "code":
+          markedText = chalk.hex("#FF6188").bgHex("#2E3035")(markedText);
+          break;
+      }
+    }
+
+    return markedText;
   }
 
   private getLength(line: string): number {
