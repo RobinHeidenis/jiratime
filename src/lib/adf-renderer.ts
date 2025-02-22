@@ -73,7 +73,7 @@ export class ADFRenderer {
     return lines;
   }
 
-  private renderTopLevelNode(node: TopLevelNode): string[] {
+  public renderTopLevelNode(node: TopLevelNode): string[] {
     if (!node || typeof node !== "object" || !("type" in node)) {
       return [];
     }
@@ -86,7 +86,7 @@ export class ADFRenderer {
       case "codeBlock":
         return this.codeBlock(node);
       case "expand":
-        return [];
+        return this.expand(node);
       case "heading":
         return this.heading(node);
       case "mediaGroup":
@@ -106,7 +106,7 @@ export class ADFRenderer {
     }
   }
 
-  private renderInlineNodes(nodes: InlineNode[]): string {
+  public renderInlineNodes(nodes: InlineNode[]): string {
     if (!nodes) {
       return "";
     }
@@ -140,6 +140,12 @@ export class ADFRenderer {
     }
 
     return string;
+  }
+
+  public pad(line: string): string {
+    const cleanLength = this.getLength(line);
+    const padding = " ".repeat(Math.max(0, this.maxLineWidth - cleanLength));
+    return `${line}${padding}`;
   }
 
   private blockQuote(node: BlockQuoteNode) {
@@ -197,7 +203,22 @@ export class ADFRenderer {
     return node.attrs.text ?? node.attrs.shortName ?? "";
   }
 
-  private expand(node: ExpandNode) {}
+  private expand(node: ExpandNode): string[] {
+    const renderer = new ADFRenderer(this.maxLineWidth - 2, this.minimumLines);
+    const nodes = node.content
+      .flatMap((content) => {
+        if (content.type === "nestedExpand") {
+          return this.nestedExpand(content);
+        }
+        return renderer.renderTopLevelNode(content);
+      })
+      .map((line) => `  ${line}`);
+
+    nodes.unshift(this.pad(`\uf078 ${node.attrs.title || "Expand"}`));
+    nodes.push(this.pad(""));
+
+    return nodes;
+  }
 
   private hardBreak(node: HardBreakNode): string {
     return `${node.attrs?.text ?? ""}\n`;
@@ -303,7 +324,18 @@ export class ADFRenderer {
     return node.attrs.text ?? `@${node.attrs.id}`;
   }
 
-  private nestedExpand(node: NestedExpandNode) {}
+  private nestedExpand(node: NestedExpandNode): string[] {
+    const renderer = new ADFRenderer(this.maxLineWidth - 5, this.minimumLines);
+    const nodes = node.content
+      .flatMap((content) => {
+        return renderer.renderTopLevelNode(content);
+      })
+      .map((line) => `   ${line}`);
+
+    nodes.unshift(renderer.pad(` \uf078 ${node.attrs.title || "Expand"}`));
+
+    return nodes;
+  }
 
   private orderedList(node: OrderedListNode, level = 0): string[] {
     return node.content.flatMap((li) => {
@@ -397,12 +429,6 @@ export class ADFRenderer {
 
   private wrapWithMarkStyling(text: string, marks: Mark[]): string {
     return text;
-  }
-
-  private pad(line: string): string {
-    const cleanLength = this.getLength(line);
-    const padding = " ".repeat(Math.max(0, this.maxLineWidth - cleanLength));
-    return `${line}${padding}`;
   }
 
   private getLength(line: string): number {
