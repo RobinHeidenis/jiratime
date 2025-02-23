@@ -55,7 +55,7 @@ export const SelectModal = ({
         {title.padEnd(maxLength - 3, " ")}
       </Text>
       {options
-        .sort((a, b) => a.label.localeCompare(b.label))
+        .toSorted((a, b) => a.label.localeCompare(b.label))
         .map((option, index) => {
           const text =
             `   ${index === focused ? "> " : " "}${option.label} `.padEnd(

@@ -50,10 +50,10 @@ export const ViewIssueModal = ({
       }
 
       if (lines > 35) {
-        if (input === "j") {
+        if (input === "j" || key.downArrow) {
           setTopOffset((prev) => Math.min(prev + 3, lines - 33));
         }
-        if (input === "k") {
+        if (input === "k" || key.upArrow) {
           setTopOffset((prev) => Math.max(prev - 3, 0));
         }
       }

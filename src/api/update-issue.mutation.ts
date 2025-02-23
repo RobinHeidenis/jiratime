@@ -42,7 +42,7 @@ export const useUpdateIssueMutation = () => {
             const updatedFields: Record<string, unknown> = {};
 
             for (const [key, value] of Object.entries(variables.fields)) {
-              if (typeof value === "object") {
+              if (typeof value === "object" && !Array.isArray(value)) {
                 updatedFields[key] = {
                   ...(issue.fields[key as keyof typeof issue.fields] as Record<
                     string,
