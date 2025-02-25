@@ -5,6 +5,7 @@ export interface Option {
   label: string;
   value: string;
   color?: string;
+  extraData?: Record<string, unknown>;
 }
 export const SelectModal = ({
   title,
