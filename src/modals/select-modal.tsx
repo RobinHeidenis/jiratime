@@ -1,9 +1,10 @@
 import { Box, Text, useInput } from "ink";
-import React, { useState } from "react";
+import { useState } from "react";
 
 export interface Option {
   label: string;
   value: string;
+  color?: string;
 }
 export const SelectModal = ({
   title,
@@ -22,8 +23,10 @@ export const SelectModal = ({
 }) => {
   const [focused, setFocused] = useState(0);
 
+  const hasColors = options.some((option) => option.color !== undefined);
+
   const maxLength = Math.max(
-    ...options.map((option) => option.label.length + 6),
+    ...options.map((option) => option.label.length + 6 + (hasColors ? 11 : 0)),
     title.length + 6,
     footer.length + 6,
   );
@@ -54,30 +57,28 @@ export const SelectModal = ({
         {"   "}
         {title.padEnd(maxLength - 3, " ")}
       </Text>
-      {options
-        .toSorted((a, b) => a.label.localeCompare(b.label))
-        .map((option, index) => {
-          const text =
-            `   ${index === focused ? "> " : " "}${option.label} `.padEnd(
-              maxLength,
-              " ",
-            );
-
-          return (
-            <Text
-              key={option.value}
-              color={
-                index === focused
-                  ? "blue"
-                  : selected === option.value
-                    ? "green"
-                    : undefined
-              }
-            >
-              {text}
-            </Text>
+      {options.map((option, index) => {
+        const text =
+          `   ${index === focused ? "> " : " "}${option.label} ${hasColors && option.value === selected ? "(selected) " : " "}`.padEnd(
+            maxLength,
+            " ",
           );
-        })}
+
+        return (
+          <Text
+            key={option.value}
+            color={
+              index === focused
+                ? "blue"
+                : !hasColors && selected === option.value
+                  ? "green"
+                  : (option.color ?? undefined)
+            }
+          >
+            {text}
+          </Text>
+        );
+      })}
       <Text>{"".padEnd(maxLength, " ")}</Text>
       <Text color={"blueBright"}>
         {"   "}

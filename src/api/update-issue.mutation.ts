@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { z } from "zod";
 import { log } from "../lib/log.js";
-import type { issue } from "./issue-query.js";
+import type { Issue } from "./get-issues.query.js";
 import { request } from "./request.js";
 
 interface UpdateIssueMutationVariables {
@@ -25,15 +24,13 @@ export const useUpdateIssueMutation = () => {
     unknown,
     Error,
     UpdateIssueMutationVariables,
-    { previousIssues: z.infer<typeof issue>[] }
+    { previousIssues: Issue[] }
   >({
     mutationFn: updateIssue,
     onMutate: (variables) => {
       queryClient.cancelQueries({ queryKey: ["issues"] });
 
-      const issues = queryClient.getQueryData(["issues"]) as z.infer<
-        typeof issue
-      >[];
+      const issues = queryClient.getQueryData(["issues"]) as Issue[];
 
       queryClient.setQueryData(
         ["issues"],

@@ -1,27 +1,33 @@
 import { Box, Text, useInput } from "ink";
 import React from "react";
 import type { z } from "zod";
-import { useGetUsersQuery } from "./api/get-users.query.js";
-import type { issue as issueSchema } from "./api/issue-query.js";
-import { useUpdateIssueMutation } from "./api/update-issue.mutation.js";
-import { env } from "./env.js";
-import { priorityMap } from "./issue.js";
-import { ADFRenderer } from "./lib/adf-renderer.js";
-import type { TopLevelNode } from "./lib/nodes.js";
-import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
-import { PaddedText } from "./padded-text.js";
+import type { issue as issueSchema } from "../api/get-issues.query.js";
+import { useGetPrioritiesQuery } from "../api/get-priorities.query.js";
+import { useGetUsersQuery } from "../api/get-users.query.js";
+import { useUpdateIssueMutation } from "../api/update-issue.mutation.js";
+import { env } from "../env.js";
+import { priorityMap } from "../issue.js";
+import { ADFRenderer } from "../lib/adf-renderer.js";
+import type { TopLevelNode } from "../lib/nodes.js";
+import { openIssueInBrowser } from "../lib/utils/openIssueInBrowser.js";
+import { PaddedText } from "../padded-text.js";
+import { useStdoutDimensions } from "../useStdoutDimensions.js";
+import { SelectPriorityModal } from "./select-priority-modal.js";
 import { SelectUserModal } from "./select-user-modal.js";
-import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
 export const ViewIssueModal = ({
   issue,
   onClose,
 }: { issue: z.infer<typeof issueSchema>; onClose: () => void }) => {
   const { mutate } = useUpdateIssueMutation();
-  const { data: _data } = useGetUsersQuery(issue.id); // Preload users
+  const { data: _users } = useGetUsersQuery(issue.id); // Preload users
+  const { data: _priorities } = useGetPrioritiesQuery(issue.fields.project.id); // Preload priorities
   const [columns, rows] = useStdoutDimensions();
   const [topOffset, setTopOffset] = React.useState(0);
+
   const [updateAssigneeModalOpen, setUpdateAssigneeModalOpen] =
+    React.useState(false);
+  const [updatePriorityModalOpen, setUpdatePriorityModalOpen] =
     React.useState(false);
 
   const description = new ADFRenderer(119, 33).render(
@@ -39,14 +45,18 @@ export const ViewIssueModal = ({
   const paddedText = description.map((line) => `${line} `).join("\n");
 
   useInput((input, key) => {
-    if (!updateAssigneeModalOpen) {
+    if (!updateAssigneeModalOpen && !updatePriorityModalOpen) {
       if (input === "o") {
         openIssueInBrowser(issue.key);
         return;
       }
-
+      if (input === "p") {
+        setUpdatePriorityModalOpen(true);
+        return;
+      }
       if (input === "a") {
         setUpdateAssigneeModalOpen(true);
+        return;
       }
 
       if (lines > 35) {
@@ -129,7 +139,10 @@ export const ViewIssueModal = ({
           )}
         </Box>
       </Box>
-      <PaddedText text=" Open issue in browser: o | Close: q" maxLength={144} />
+      <PaddedText
+        text=" Open issue in browser: o | Update assignee: a | Update priority: p | Close: q"
+        maxLength={144}
+      />
       {lines > 35 && (
         <Box
           position="absolute"
@@ -154,6 +167,21 @@ export const ViewIssueModal = ({
               issueId: issue.id,
               fields: {
                 assignee: { accountId: user.value, displayName: user.label },
+              },
+            })
+          }
+        />
+      )}
+      {updatePriorityModalOpen && (
+        <SelectPriorityModal
+          projectId={issue.fields.project.id}
+          selectedPriorityId={issue.fields.priority.id}
+          onClose={() => setUpdatePriorityModalOpen(false)}
+          onSelect={(priority) =>
+            mutate({
+              issueId: issue.id,
+              fields: {
+                priority: { id: priority.value, name: priority.label },
               },
             })
           }

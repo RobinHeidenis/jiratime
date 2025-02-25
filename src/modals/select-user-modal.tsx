@@ -1,7 +1,6 @@
 import { Text } from "ink";
-import React from "react";
-import { useGetUsersQuery } from "./api/get-users.query.js";
-import { SelectModal, type Option } from "./select-modal.js";
+import { useGetUsersQuery } from "../api/get-users.query.js";
+import { type Option, SelectModal } from "./select-modal.js";
 
 export const SelectUserModal = ({
   issueId,
@@ -22,10 +21,12 @@ export const SelectUserModal = ({
 
   return (
     <SelectModal
-      options={users.map((user) => ({
-        label: user.displayName,
-        value: user.accountId,
-      }))}
+      options={users
+        .map((user) => ({
+          label: user.displayName,
+          value: user.accountId,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label))}
       title={"Select user"}
       footer={" Confirm: <return> | Cancel: q"}
       selected={selectedUserId}

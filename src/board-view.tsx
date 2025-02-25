@@ -1,12 +1,12 @@
 import { Spinner } from "@inkjs/ui";
 import { useIsFetching } from "@tanstack/react-query";
 import { Box, Text, useInput } from "ink";
-import React, { useState } from "react";
-import { useBoardQuery } from "./api/board-query.js";
-import { useIssueQuery } from "./api/issue-query.js";
+import { useState } from "react";
+import { useBoardQuery } from "./api/get-board.query.js";
+import { useIssueQuery } from "./api/get-issues.query.js";
 import { Board } from "./board.js";
-import { SelectUsersModal } from "./select-users-modal.js";
-import { ViewIssueModal } from "./view-issue-modal.js";
+import { SelectUsersModal } from "./modals/select-users-modal.js";
+import { ViewIssueModal } from "./modals/view-issue-modal.js";
 
 export const BoardView = () => {
   const { data: board } = useBoardQuery();
