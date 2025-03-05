@@ -45,6 +45,8 @@ const fetchBoard = async () => {
   }
 };
 
+export type FetchBoardResult = ReturnType<typeof fetchBoard>;
+
 export const useBoardQuery = () => {
   return useQuery({
     queryKey: ["board"],

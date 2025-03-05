@@ -21,7 +21,10 @@ import { SelectUserModal } from "./select-user-modal.js";
 export const ViewIssueModal = ({
   issue,
   onClose,
-}: { issue: z.infer<typeof issueSchema>; onClose: () => void }) => {
+}: {
+  issue: z.infer<typeof issueSchema>;
+  onClose: () => void;
+}) => {
   const { mutate: updateIssue } = useUpdateIssueMutation();
   const { mutate: transitionIssue } = useTransitionIssueMutation();
   const { data: _users } = useGetUsersQuery(issue.id); // Preload users
@@ -202,13 +205,13 @@ export const ViewIssueModal = ({
           issueId={issue.id}
           selectedStatusId={issue.fields.status.id}
           onClose={() => setUpdateLaneModalOpen(false)}
-          onSelect={(status) =>
+          onSelect={(status) => {
             transitionIssue({
               issueId: issue.id,
               transitionId: status.value,
               newStatusId: status.extraData!.newStatusId as string,
-            })
-          }
+            });
+          }}
         />
       )}
     </Box>
