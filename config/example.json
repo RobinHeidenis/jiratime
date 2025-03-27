@@ -1,0 +1,12 @@
+{
+  "JIRA_API_KEY": "Paste the output of `echo -n 'your@email.com:your-api-token' | base64` here",
+  "JIRA_BASE_URL": "https://<entity>.atlassian.net",
+  "JIRA_BOARD_ID": 3,
+  "STORY_POINTS_FIELD": "<customfield_id>",
+  "DEVELOPER_FIELD": "<customfield_id>",
+  "boards": {
+    "3": {
+      "jqlPrefix": "Sprint in openSprints() AND status NOT IN (\"Won't fix\") AND"
+    }
+  }
+}

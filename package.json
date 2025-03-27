@@ -9,6 +9,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "start": "FORCE_HYPERLINK=true node dist/cli.js",
     "dev": "tsc --watch",
     "lint": "biome check"
   },
