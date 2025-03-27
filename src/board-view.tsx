@@ -1,5 +1,5 @@
 import { Spinner } from "@inkjs/ui";
-import { useIsFetching } from "@tanstack/react-query";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { Box, Text, useInput } from "ink";
 import { useAtomValue } from "jotai";
 import { useState } from "react";
@@ -33,11 +33,17 @@ export const BoardView = () => {
   const modals = useAtomValue(modalsAtom);
   const inputDisabled = useAtomValue(inputDisabledAtom);
 
+  const queryClient = useQueryClient();
+
   useInput((input) => {
     if (selectUsersModalOpen || inputDisabled) return;
 
     if (input === "u") {
       setSelectUsersModalOpen(true);
+    }
+
+    if (input === "R") {
+      queryClient.invalidateQueries();
     }
   });
 
@@ -64,8 +70,9 @@ export const BoardView = () => {
       )}
       {board && issues && (
         <Box width={"100%"} justifyContent="space-between">
-          <Text> Filter users: u | Open: o</Text>
+          <Text>{" Filter users: u | Open: o"}</Text>
           {isFetching > 0 && <Spinner label="Fetching" />}
+          <Text>{" Refresh: R "}</Text>
         </Box>
       )}
 
