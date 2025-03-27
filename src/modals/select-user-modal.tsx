@@ -26,7 +26,17 @@ export const SelectUserModal = ({
           label: user.displayName,
           value: user.accountId,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label))}
+        .sort((a, b) => {
+          if (a.value === selectedUserId) {
+            return -1;
+          }
+
+          if (b.value === selectedUserId) {
+            return 1;
+          }
+
+          return a.label.localeCompare(b.label);
+        })}
       title={"Select user"}
       footer={" Confirm: <return> | Cancel: q"}
       selected={selectedUserId}

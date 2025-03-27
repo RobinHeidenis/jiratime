@@ -26,10 +26,17 @@ export const SelectModal = ({
 
   const hasColors = options.some((option) => option.color !== undefined);
 
+  // border + padding + arrow + space
+  // |   > Option 1 (selected) |
+  // |   Option 2              |
+  const standardWidth = 1 + 3 + 1 + 1;
+
   const maxLength = Math.max(
-    ...options.map((option) => option.label.length + 6 + (hasColors ? 11 : 0)),
-    title.length + 6,
-    footer.length + 6,
+    ...options.map(
+      (option) => option.label.length + standardWidth + (!hasColors ? 11 : 0),
+    ),
+    title.length + standardWidth,
+    footer.length + standardWidth,
   );
 
   useInput((input, key) => {

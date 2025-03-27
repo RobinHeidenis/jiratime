@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { request } from "./request.js";
+import { HOUR, request } from "./request.js";
 
 const transition = z.object({
   id: z.string(),
@@ -26,8 +26,8 @@ export const useGetIssueTransitionsQuery = (
   return useQuery({
     queryKey: ["priorities", issueId],
     queryFn: () => fetchIssueTransitions(issueId),
-    gcTime: 1000 * 60 * 60,
-    staleTime: 1000 * 60 * 60,
+    gcTime: HOUR,
+    staleTime: HOUR,
     enabled,
   });
 };

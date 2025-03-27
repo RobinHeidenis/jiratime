@@ -1,6 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import { useAtomValue } from "jotai";
-import React from "react";
+import { useState } from "react";
 import type { z } from "zod";
 import { useGetIssueTransitionsQuery } from "../api/get-issue-transitions.query.js";
 import type { issue as issueSchema } from "../api/get-issues.query.js";
@@ -26,7 +26,7 @@ export const ViewIssueModal = ({
   const { data: _priorities } = useGetPrioritiesQuery(issue.fields.project.id); // Preload priorities
   const { data: _transitions } = useGetIssueTransitionsQuery(issue.id); // Preload transitions
   const [columns, rows] = useStdoutDimensions();
-  const [topOffset, setTopOffset] = React.useState(0);
+  const [topOffset, setTopOffset] = useState(0);
   const modals = useAtomValue(modalsAtom);
 
   const description = new ADFRenderer(119, 33).render(

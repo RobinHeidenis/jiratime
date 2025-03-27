@@ -1,6 +1,8 @@
 import { env } from "../env.js";
 import { log } from "../lib/log.js";
 
+export const HOUR = 1000 * 60 * 60;
+
 export const request = async (
   endpoint: string,
   customOptions?: RequestInit,
@@ -33,5 +35,5 @@ export const request = async (
     return {};
   }
 
-  return await JSON.parse(responseText);
+  return JSON.parse(responseText);
 };

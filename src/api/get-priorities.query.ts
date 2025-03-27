@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { request } from "./request.js";
+import { HOUR, request } from "./request.js";
 
 const priority = z.object({
   statusColor: z.string(),
@@ -21,8 +21,8 @@ export const useGetPrioritiesQuery = (projectId: string, enabled = true) => {
   return useQuery({
     queryKey: ["priorities"],
     queryFn: () => fetchPriorities(projectId),
-    gcTime: 1000 * 60 * 60,
-    staleTime: 1000 * 60 * 60,
+    gcTime: HOUR,
+    staleTime: HOUR,
     enabled,
   });
 };
