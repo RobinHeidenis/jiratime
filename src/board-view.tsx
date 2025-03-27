@@ -34,7 +34,7 @@ export const BoardView = () => {
   const inputDisabled = useAtomValue(inputDisabledAtom);
 
   useInput((input) => {
-    if (selectUsersModalOpen || inputDisabledAtom) return;
+    if (selectUsersModalOpen || inputDisabled) return;
 
     if (input === "u") {
       setSelectUsersModalOpen(true);
