@@ -1,22 +1,31 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Text } from "ink";
+import { useAtomValue } from "jotai";
+import type { Issue } from "../api/get-issues.query.js";
 import { useGetPrioritiesQuery } from "../api/get-priorities.query.js";
+import { highlightedIssueAtom } from "../atoms/highlighted-issue.atom.js";
 import type { Option } from "./select-modal.js";
 import { SelectModal } from "./select-modal.js";
 
 export const SelectPriorityModal = ({
-  projectId,
-  selectedPriorityId,
   onSelect,
   onClose,
 }: {
-  projectId: string;
-  selectedPriorityId: string;
   onSelect: (user: Option) => void;
   onClose: () => void;
 }) => {
-  const { data: priorities } = useGetPrioritiesQuery(projectId);
+  const highlightedIssue = useAtomValue(highlightedIssueAtom);
+  const queryClient = useQueryClient();
+  const issues = queryClient.getQueryData(["issues"]) as Issue[];
 
-  if (!priorities || priorities.length === 0) {
+  const issue = issues?.find((issue) => issue.id === highlightedIssue.id);
+
+  const { data: priorities } = useGetPrioritiesQuery(
+    issue?.fields.project.id!,
+    !!issue,
+  );
+
+  if (!priorities || priorities.length === 0 || !issue) {
     return <Text>Loading...</Text>;
   }
 
@@ -29,9 +38,9 @@ export const SelectPriorityModal = ({
       }))}
       title={"Select priority"}
       footer={" Confirm: <return> | Cancel: q"}
-      selected={selectedPriorityId}
+      selected={issue.fields.priority.id}
       onSelect={(choice: Option) => {
-        if (choice.value !== selectedPriorityId) {
+        if (choice.value !== issue.fields.priority.id) {
           onSelect(choice);
         } else {
           onClose();

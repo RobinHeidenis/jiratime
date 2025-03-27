@@ -17,11 +17,12 @@ const fetchPriorities = async (projectId: string) => {
   return z.object({ values: z.array(priority) }).parse(response).values;
 };
 
-export const useGetPrioritiesQuery = (projectId: string) => {
+export const useGetPrioritiesQuery = (projectId: string, enabled = true) => {
   return useQuery({
     queryKey: ["priorities"],
     queryFn: () => fetchPriorities(projectId),
     gcTime: 1000 * 60 * 60,
     staleTime: 1000 * 60 * 60,
+    enabled,
   });
 };

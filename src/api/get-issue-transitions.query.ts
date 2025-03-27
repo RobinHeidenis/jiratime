@@ -19,11 +19,15 @@ const fetchIssueTransitions = async (issueId: string) => {
     .transitions;
 };
 
-export const useGetIssueTransitionsQuery = (issueId: string) => {
+export const useGetIssueTransitionsQuery = (
+  issueId: string,
+  enabled = true,
+) => {
   return useQuery({
     queryKey: ["priorities", issueId],
     queryFn: () => fetchIssueTransitions(issueId),
     gcTime: 1000 * 60 * 60,
     staleTime: 1000 * 60 * 60,
+    enabled,
   });
 };

@@ -1,10 +1,11 @@
 import { Box, Text, useInput } from "ink";
-import { useAtom } from "jotai/react";
+import { useAtom, useAtomValue } from "jotai/react";
 import { useCallback } from "react";
 import type { z } from "zod";
 import type { boardWithFilter } from "./api/get-board.query.js";
 import type { Issue } from "./api/get-issues.query.js";
 import { highlightedIssueAtom } from "./atoms/highlighted-issue.atom.js";
+import { inputDisabledAtom, openModal } from "./atoms/modals.atom.js";
 import { scrollOffsetAtom } from "./atoms/scroll-offset.atom.js";
 import { Column } from "./column.js";
 import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
@@ -80,6 +81,7 @@ export const Board = ({
   const [width, height] = useStdoutDimensions();
   const [scrollOffset, setScrollOffset] = useAtom(scrollOffsetAtom);
   const [highlightedIssue, setHighlightedIssue] = useAtom(highlightedIssueAtom);
+  const inputDisabled = useAtomValue(inputDisabledAtom);
 
   const columns = boardConfiguration.columnConfig.columns.map((c) => c.name);
 
@@ -134,6 +136,21 @@ export const Board = ({
   );
 
   useInput((input, key) => {
+    if (inputDisabled) return;
+
+    if (input === "p") {
+      openModal("updatePriority");
+      return;
+    }
+    if (input === "a") {
+      openModal("updateAssignee");
+      return;
+    }
+    if (input === "m") {
+      openModal("moveIssue");
+      return;
+    }
+
     if (ignoreInput) return;
 
     if (key.return) {
@@ -148,15 +165,14 @@ export const Board = ({
       openIssueInBrowser(issue?.key ?? "");
     } else if (input === "j" || key.downArrow) {
       setHighlightedIssue((prev) => {
-        const newIndex = Math.min(
-          getColumn(groupedIssues, columns[prev.column]!).length - 1,
-          prev.index + 1,
-        );
+        const column = getColumn(groupedIssues, columns[prev.column]!);
+        const newIndex = Math.min(column.length - 1, prev.index + 1);
 
         checkAndSetOffsets("top", newIndex);
 
         return {
           ...prev,
+          id: column[newIndex]?.id ?? null,
           index: newIndex,
         };
       });
@@ -164,18 +180,22 @@ export const Board = ({
       setHighlightedIssue((prev) => {
         const newIndex = Math.max(0, prev.index - 1);
 
+        const column = getColumn(groupedIssues, columns[prev.column]!);
+
         checkAndSetOffsets("top", newIndex);
 
         return {
           ...prev,
+          id: column[newIndex]?.id ?? null,
           index: newIndex,
         };
       });
     } else if (input === "h" || key.leftArrow) {
       setHighlightedIssue((prev) => {
         const newIndex = Math.max(0, prev.column - 1);
+        const column = getColumn(groupedIssues, columns[newIndex]!);
         const newIssueIndex = Math.min(
-          Math.max(getColumn(groupedIssues, columns[newIndex]!).length - 1, 0),
+          Math.max(column.length - 1, 0),
           prev.index,
         );
 
@@ -189,6 +209,7 @@ export const Board = ({
         }
 
         return {
+          id: column[newIssueIndex]?.id ?? null,
           column: newIndex,
           index: newIssueIndex,
         };
@@ -197,8 +218,9 @@ export const Board = ({
       setHighlightedIssue((prev) => {
         const newIndex = Math.min(columns.length - 1, prev.column + 1);
 
+        const column = getColumn(groupedIssues, columns[newIndex]!);
         const newIssueIndex = Math.min(
-          Math.max(getColumn(groupedIssues, columns[newIndex]!).length - 1, 0),
+          Math.max(column.length - 1, 0),
           prev.index,
         );
 
@@ -212,6 +234,7 @@ export const Board = ({
         }
 
         return {
+          id: column[newIssueIndex]?.id ?? null,
           column: newIndex,
           index: newIssueIndex,
         };

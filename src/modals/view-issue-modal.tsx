@@ -1,12 +1,12 @@
 import { Box, Text, useInput } from "ink";
+import { useAtomValue } from "jotai";
 import React from "react";
 import type { z } from "zod";
 import { useGetIssueTransitionsQuery } from "../api/get-issue-transitions.query.js";
 import type { issue as issueSchema } from "../api/get-issues.query.js";
 import { useGetPrioritiesQuery } from "../api/get-priorities.query.js";
 import { useGetUsersQuery } from "../api/get-users.query.js";
-import { useTransitionIssueMutation } from "../api/transition-issue.mutation.js";
-import { useUpdateIssueMutation } from "../api/update-issue.mutation.js";
+import { modalsAtom } from "../atoms/modals.atom.js";
 import { env } from "../env.js";
 import { priorityMap } from "../issue.js";
 import { ADFRenderer } from "../lib/adf-renderer.js";
@@ -14,9 +14,6 @@ import type { TopLevelNode } from "../lib/nodes.js";
 import { openIssueInBrowser } from "../lib/utils/openIssueInBrowser.js";
 import { PaddedText } from "../padded-text.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
-import { SelectLaneModal } from "./select-lane-modal.js";
-import { SelectPriorityModal } from "./select-priority-modal.js";
-import { SelectUserModal } from "./select-user-modal.js";
 
 export const ViewIssueModal = ({
   issue,
@@ -25,19 +22,12 @@ export const ViewIssueModal = ({
   issue: z.infer<typeof issueSchema>;
   onClose: () => void;
 }) => {
-  const { mutate: updateIssue } = useUpdateIssueMutation();
-  const { mutate: transitionIssue } = useTransitionIssueMutation();
   const { data: _users } = useGetUsersQuery(issue.id); // Preload users
   const { data: _priorities } = useGetPrioritiesQuery(issue.fields.project.id); // Preload priorities
   const { data: _transitions } = useGetIssueTransitionsQuery(issue.id); // Preload transitions
   const [columns, rows] = useStdoutDimensions();
   const [topOffset, setTopOffset] = React.useState(0);
-
-  const [updateAssigneeModalOpen, setUpdateAssigneeModalOpen] =
-    React.useState(false);
-  const [updatePriorityModalOpen, setUpdatePriorityModalOpen] =
-    React.useState(false);
-  const [updateLaneModalOpen, setUpdateLaneModalOpen] = React.useState(false);
+  const modals = useAtomValue(modalsAtom);
 
   const description = new ADFRenderer(119, 33).render(
     issue.fields.description?.content?.length
@@ -54,21 +44,9 @@ export const ViewIssueModal = ({
   const paddedText = description.map((line) => `${line} `).join("\n");
 
   useInput((input, key) => {
-    if (!updateAssigneeModalOpen && !updatePriorityModalOpen) {
+    if (!modals.updateAssignee && !modals.updatePriority) {
       if (input === "o") {
         openIssueInBrowser(issue.key);
-        return;
-      }
-      if (input === "p") {
-        setUpdatePriorityModalOpen(true);
-        return;
-      }
-      if (input === "a") {
-        setUpdateAssigneeModalOpen(true);
-        return;
-      }
-      if (input === "m") {
-        setUpdateLaneModalOpen(true);
         return;
       }
 
@@ -168,50 +146,6 @@ export const ViewIssueModal = ({
           borderBottom={false}
           marginTop={4 + (topOffset * 16) / (lines - 33)}
           height={17}
-        />
-      )}
-      {updateAssigneeModalOpen && (
-        <SelectUserModal
-          issueId={issue.id}
-          selectedUserId={issue.fields.assignee.accountId}
-          onClose={() => setUpdateAssigneeModalOpen(false)}
-          onSelect={(user) =>
-            updateIssue({
-              issueId: issue.id,
-              fields: {
-                assignee: { accountId: user.value, displayName: user.label },
-              },
-            })
-          }
-        />
-      )}
-      {updatePriorityModalOpen && (
-        <SelectPriorityModal
-          projectId={issue.fields.project.id}
-          selectedPriorityId={issue.fields.priority.id}
-          onClose={() => setUpdatePriorityModalOpen(false)}
-          onSelect={(priority) =>
-            updateIssue({
-              issueId: issue.id,
-              fields: {
-                priority: { id: priority.value, name: priority.label },
-              },
-            })
-          }
-        />
-      )}
-      {updateLaneModalOpen && (
-        <SelectLaneModal
-          issueId={issue.id}
-          selectedStatusId={issue.fields.status.id}
-          onClose={() => setUpdateLaneModalOpen(false)}
-          onSelect={(status) => {
-            transitionIssue({
-              issueId: issue.id,
-              transitionId: status.value,
-              newStatusId: status.extraData!.newStatusId as string,
-            });
-          }}
         />
       )}
     </Box>
