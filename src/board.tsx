@@ -141,10 +141,6 @@ export const Board = ({
   useInput((input, key) => {
     if (inputDisabled) return;
 
-    if (input === "p") {
-      openModal("updatePriority");
-      return;
-    }
     if (input === "a") {
       openModal("updateAssignee");
       return;

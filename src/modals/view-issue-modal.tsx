@@ -6,7 +6,7 @@ import { useGetIssueTransitionsQuery } from "../api/get-issue-transitions.query.
 import type { issue as issueSchema } from "../api/get-issues.query.js";
 import { useGetPrioritiesQuery } from "../api/get-priorities.query.js";
 import { useGetUsersQuery } from "../api/get-users.query.js";
-import { modalsAtom } from "../atoms/modals.atom.js";
+import { modalsAtom, openModal } from "../atoms/modals.atom.js";
 import { env } from "../env.js";
 import { priorityMap } from "../issue.js";
 import { ADFRenderer } from "../lib/adf-renderer.js";
@@ -47,6 +47,11 @@ export const ViewIssueModal = ({
     if (!modals.updateAssignee && !modals.updatePriority) {
       if (input === "o") {
         openIssueInBrowser(issue.key);
+        return;
+      }
+
+      if (input === "p") {
+        openModal("updatePriority");
         return;
       }
 
