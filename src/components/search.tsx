@@ -2,23 +2,69 @@ import { Text, useInput } from "ink";
 
 const CURSOR = "█";
 
-export const Search = ({
-  value,
-  onChange,
-}: {
+type SearchProps = {
+  supportsNewLines?: boolean;
   value: string;
   onChange: (value: string) => void;
-}) => {
+  onStopSearching: () => void;
+};
+
+export const SearchInput = ({
+  state,
+  onResetSearch,
+  ...searchProps
+}: {
+  state: "search" | "result";
+  onResetSearch: () => void;
+} & SearchProps) => {
+  useInput((_, key) => {
+    if (key.escape && state === "result") {
+      onResetSearch();
+      return;
+    }
+  });
+
+  if (state === "result") {
+    return (
+      <Text>
+        Search: matches for '{searchProps.value}'{" "}
+        <Text color="blue">{"<Esc>: Exit search"}</Text>{" "}
+      </Text>
+    );
+  }
+
+  return <Search {...searchProps} />;
+};
+
+export const Search = ({
+  supportsNewLines = false,
+  value,
+  onChange,
+  onStopSearching,
+}: SearchProps) => {
+  const handleChange = (value: string) => {
+    onChange(value);
+  };
+
   useInput((input, key) => {
+    if (key.escape) {
+      return onStopSearching();
+    }
+
+    // Don't add new lines
+    if (key.return && !supportsNewLines) {
+      return;
+    }
+
     // Hitting backspace counts as delete?
     if (key.delete || key.backspace) {
-      onChange(value.slice(0, -1));
+      handleChange(value.slice(0, -1));
     } else {
-      onChange(value + input);
+      handleChange(value + input);
     }
   });
 
   const searchDisplay = `Search: ${value}${CURSOR}`;
 
-  return <Text> {searchDisplay}</Text>;
+  return <Text>{searchDisplay}</Text>;
 };

@@ -1,7 +1,7 @@
 import { Spinner } from "@inkjs/ui";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { Box, Text, useInput } from "ink";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
 import { useBoardQuery } from "./api/get-board.query.js";
 import { useIssueQuery } from "./api/get-issues.query.js";
@@ -9,7 +9,8 @@ import { useTransitionIssueMutation } from "./api/transition-issue.mutation.js";
 import { useUpdateIssueMutation } from "./api/update-issue.mutation.js";
 import {
   boardSearchAtom,
-  isBoardSearchActiveAtom,
+  boardSearchStateAtom,
+  resetBoardSearchAtom,
 } from "./atoms/board-search.atom.js";
 import {
   closeModal,
@@ -17,7 +18,7 @@ import {
   modalsAtom,
 } from "./atoms/modals.atom.js";
 import { Board } from "./board.js";
-import { Search } from "./components/search.js";
+import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
@@ -53,13 +54,15 @@ export const BoardView = () => {
   const modals = useAtomValue(modalsAtom);
   const inputDisabled = useAtomValue(inputDisabledAtom);
   const [boardSearch, setBoardSearch] = useAtom(boardSearchAtom);
+  const resetBoardSearch = useSetAtom(resetBoardSearchAtom);
 
-  const isBoardSearchActive = useAtomValue(isBoardSearchActiveAtom);
+  const searchState = useAtomValue(boardSearchStateAtom);
 
   const queryClient = useQueryClient();
 
   useInput((input, key) => {
-    if (selectUsersModalOpen || inputDisabled || isBoardSearchActive) return;
+    if (selectUsersModalOpen || inputDisabled || searchState === "active")
+      return;
 
     if (input === "u") {
       setSelectUsersModalOpen(true);
@@ -119,13 +122,22 @@ export const BoardView = () => {
       )}
       {board &&
         issues &&
-        (isBoardSearchActive ? (
-          <Search value={boardSearch} onChange={setBoardSearch} />
-        ) : (
+        (searchState === "disabled" ? (
           <Box width={"100%"} justifyContent="space-between">
             <Text>{` ${hotkeysDisplay}`}</Text>
             {isFetching > 0 && <Spinner label="Fetching" />}
             <Text>{" Refresh: R "}</Text>
+          </Box>
+        ) : (
+          <Box>
+            <Text> </Text>
+            <SearchInput
+              state={searchState === "active" ? "search" : "result"}
+              value={boardSearch ?? ""}
+              onChange={setBoardSearch}
+              onStopSearching={resetBoardSearch}
+              onResetSearch={resetBoardSearch}
+            />
           </Box>
         ))}
 
