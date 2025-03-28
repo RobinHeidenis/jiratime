@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Box, Text } from "ink";
-import { Provider } from "jotai";
+import { Provider as JotaiProvider } from "jotai";
 import { store } from "./atoms/store.js";
 import { BoardView } from "./board-view.js";
 import { createFilePersister } from "./lib/query-storage-persister.js";
@@ -18,7 +18,7 @@ const persister = createFilePersister();
 
 export const App = () => {
   return (
-    <Provider store={store}>
+    <JotaiProvider store={store}>
       <PersistQueryClientProvider
         client={queryClient}
         persistOptions={{ persister }}
@@ -35,6 +35,6 @@ export const App = () => {
           </Box>
         </Box>
       </PersistQueryClientProvider>
-    </Provider>
+    </JotaiProvider>
   );
 };

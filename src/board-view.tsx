@@ -5,7 +5,6 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
 import { useBoardQuery } from "./api/get-board.query.js";
 import { useIssueQuery } from "./api/get-issues.query.js";
-import { useTransitionIssueMutation } from "./api/transition-issue.mutation.js";
 import { useUpdateIssueMutation } from "./api/update-issue.mutation.js";
 import {
   boardSearchAtom,
@@ -34,6 +33,8 @@ const HOTKEYS = [
   myAccountId ? { key: "M", description: "Assigned to me" } : undefined,
   { key: "o", description: "Open" },
   { key: "/", description: "Search" },
+  { key: "a", description: "Change assignee" },
+  { key: "m", description: "Move issue" },
 ].filter((x) => x !== undefined);
 
 const hotkeysDisplay = HOTKEYS.map(
@@ -42,7 +43,6 @@ const hotkeysDisplay = HOTKEYS.map(
 
 export const BoardView = () => {
   const { mutate: updateIssue } = useUpdateIssueMutation();
-  const { mutate: transitionIssue } = useTransitionIssueMutation();
 
   const { data: board } = useBoardQuery();
   const { data: issues } = useIssueQuery(board?.filter.jql);

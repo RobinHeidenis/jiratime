@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { HOUR, request } from "./request.js";
 
@@ -23,5 +23,14 @@ export const useGetPrioritiesQuery = (projectId: string, enabled = true) => {
     queryFn: () => fetchPriorities(projectId),
     staleTime: HOUR,
     enabled,
+  });
+};
+
+export const prefetchPriorities = async (projectId: string) => {
+  const queryClient = useQueryClient();
+  await queryClient.prefetchQuery({
+    queryKey: ["priorities"],
+    queryFn: () => fetchPriorities(projectId),
+    staleTime: HOUR,
   });
 };
