@@ -9,6 +9,7 @@ import { inputDisabledAtom, openModal } from "./atoms/modals.atom.js";
 import { scrollOffsetAtom } from "./atoms/scroll-offset.atom.js";
 import { Column } from "./column.js";
 import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
+import type { JiraUser } from "./types/jira-user.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
 export const groupIssuesByColumn = (
@@ -74,7 +75,7 @@ export const Board = ({
 }: {
   boardConfiguration: z.infer<typeof boardWithFilter>;
   issues: Issue[];
-  filteredUsers: string[];
+  filteredUsers: readonly JiraUser[];
   ignoreInput: boolean;
   viewIssue: (id: string | null) => void;
 }) => {
@@ -86,7 +87,11 @@ export const Board = ({
   const columns = boardConfiguration.columnConfig.columns.map((c) => c.name);
 
   const filteredIssues = issues.filter((issue) =>
-    filteredUsers.includes(issue.fields.assignee.displayName),
+    filteredUsers.some(
+      (user) =>
+        user.displayName === issue.fields.assignee.displayName ||
+        user.accountId === issue.fields.assignee.accountId,
+    ),
   );
 
   const groupedIssues = groupIssuesByColumn(
@@ -247,7 +252,7 @@ export const Board = ({
       <Text>
         {" "}
         Selected users:{" "}
-        {filteredUsers.map((user) => user.split(" ")[0]).join(", ")}
+        {filteredUsers.map((user) => user.displayName.split(" ")[0]).join(", ")}
       </Text>
       <Box width={"100%"} overflow="hidden">
         <Box gap={1} width={"100%"} marginLeft={-scrollOffset.left}>

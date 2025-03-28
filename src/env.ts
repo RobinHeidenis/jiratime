@@ -17,6 +17,7 @@ const envVariables = z.object({
   JIRA_API_KEY: z.string(),
   JIRA_BASE_URL: z.string().url(),
   JIRA_BOARD_ID: z.string().or(z.number()),
+  JIRA_ACCOUNT_ID: z.string().optional(),
   STORY_POINTS_FIELD: z.string(),
   DEVELOPER_FIELD: z.string().optional(),
   boards: z.record(z.object({ jqlPrefix: z.string() })).optional(),
@@ -38,6 +39,4 @@ if (!result.success) {
   process.exit(1);
 }
 
-const env = result.data;
-
-export { env };
+export const env = result.data;
