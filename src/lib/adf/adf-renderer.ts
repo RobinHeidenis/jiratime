@@ -2,7 +2,7 @@ import chalk, { type ChalkInstance } from "chalk";
 import { format } from "date-fns";
 import terminalLink from "terminal-link";
 import wrapAnsi from "wrap-ansi";
-import { env } from "../env.js";
+import { env } from "../../env.js";
 import type { Mark } from "./marks.js";
 import type {
   BlockQuoteNode,

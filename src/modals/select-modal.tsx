@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
+import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
 export interface Option {
   label: string;
@@ -12,6 +13,7 @@ export const SelectModal = ({
   footer,
   options,
   selected,
+  initialFocusOnSelected = true,
   onSelect,
   onClose,
 }: {
@@ -19,10 +21,16 @@ export const SelectModal = ({
   footer: string;
   options: Option[];
   selected: string;
+  initialFocusOnSelected?: boolean;
   onSelect: (selected: Option) => void;
   onClose: () => void;
 }) => {
-  const [focused, setFocused] = useState(0);
+  const [focused, setFocused] = useState(
+    initialFocusOnSelected
+      ? options.findIndex((option) => option.value === selected)
+      : 0,
+  );
+  const [columns, rows] = useStdoutDimensions();
 
   const hasColors = options.some((option) => option.color !== undefined);
 
@@ -58,8 +66,8 @@ export const SelectModal = ({
       position="absolute"
       borderStyle={"round"}
       borderColor={"green"}
-      marginLeft={146 / 2 - maxLength / 2}
-      marginTop={10}
+      marginLeft={Math.floor((columns - (maxLength + 2)) / 2)}
+      marginTop={Math.floor((rows - (1 + options.length + 2)) / 2)}
     >
       <Text>
         {"   "}

@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
+import type { JiraUser } from "../types/jira-user.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
 export const SelectUsersModal = ({
@@ -12,9 +13,9 @@ export const SelectUsersModal = ({
 }: {
   title: string;
   footer: string;
-  options: string[];
-  selected: string[];
-  onSelect: (selected: string[]) => void;
+  options: JiraUser[];
+  selected: JiraUser[];
+  onSelect: (selected: JiraUser[]) => void;
   onClose: () => void;
 }) => {
   const [focused, setFocused] = useState(0);
@@ -26,7 +27,7 @@ export const SelectUsersModal = ({
   const [columns, rows] = useStdoutDimensions();
 
   const maxLength = Math.max(
-    ...options.map((option) => option.length + 6),
+    ...options.map((option) => option.displayName.length + 6),
     title.length + 6,
     footer.length + 6,
   );
@@ -67,14 +68,14 @@ export const SelectUsersModal = ({
       </Text>
       {options.map((option, index) => {
         const text =
-          `   ${index === focused ? "> " : " "}${option} ${selected.includes(index) ? "✓" : " "}`.padEnd(
+          `   ${index === focused ? "> " : " "}${option.displayName} ${selected.includes(index) ? "✓" : " "}`.padEnd(
             maxLength,
             " ",
           );
 
         return (
           <Text
-            key={option}
+            key={option.accountId}
             color={
               index === focused
                 ? "blue"

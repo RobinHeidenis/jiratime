@@ -2,15 +2,15 @@ import { Box, Text, useInput } from "ink";
 import { useAtomValue } from "jotai";
 import { useState } from "react";
 import type { z } from "zod";
-import { useGetIssueTransitionsQuery } from "../api/get-issue-transitions.query.js";
+import { prefetchIssueTransitions } from "../api/get-issue-transitions.query.js";
 import type { issue as issueSchema } from "../api/get-issues.query.js";
-import { useGetPrioritiesQuery } from "../api/get-priorities.query.js";
-import { useGetUsersQuery } from "../api/get-users.query.js";
-import { modalsAtom } from "../atoms/modals.atom.js";
+import { prefetchPriorities } from "../api/get-priorities.query.js";
+import { prefetchUsers } from "../api/get-users.query.js";
+import { modalsAtom, openModal } from "../atoms/modals.atom.js";
 import { env } from "../env.js";
 import { priorityMap } from "../issue.js";
-import { ADFRenderer } from "../lib/adf-renderer.js";
-import type { TopLevelNode } from "../lib/nodes.js";
+import { ADFRenderer } from "../lib/adf/adf-renderer.js";
+import type { TopLevelNode } from "../lib/adf/nodes.js";
 import { openIssueInBrowser } from "../lib/utils/openIssueInBrowser.js";
 import { PaddedText } from "../padded-text.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
@@ -22,9 +22,9 @@ export const ViewIssueModal = ({
   issue: z.infer<typeof issueSchema>;
   onClose: () => void;
 }) => {
-  const { data: _users } = useGetUsersQuery(issue.id); // Preload users
-  const { data: _priorities } = useGetPrioritiesQuery(issue.fields.project.id); // Preload priorities
-  const { data: _transitions } = useGetIssueTransitionsQuery(issue.id); // Preload transitions
+  prefetchUsers(issue.id);
+  prefetchPriorities(issue.fields.project.id);
+  prefetchIssueTransitions(issue.id);
   const [columns, rows] = useStdoutDimensions();
   const [topOffset, setTopOffset] = useState(0);
   const modals = useAtomValue(modalsAtom);
@@ -47,6 +47,11 @@ export const ViewIssueModal = ({
     if (!modals.updateAssignee && !modals.updatePriority) {
       if (input === "o") {
         openIssueInBrowser(issue.key);
+        return;
+      }
+
+      if (input === "p") {
+        openModal("updatePriority");
         return;
       }
 
@@ -131,7 +136,7 @@ export const ViewIssueModal = ({
         </Box>
       </Box>
       <PaddedText
-        text=" Open issue in browser: o | Update assignee: a | Update priority: p | Close: q"
+        text=" Open issue in browser: o | Update assignee: a | Update priority: p | Move issue: m | Close: q"
         maxLength={144}
       />
       {lines > 35 && (

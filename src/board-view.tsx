@@ -1,11 +1,10 @@
 import { Spinner } from "@inkjs/ui";
-import { useIsFetching } from "@tanstack/react-query";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { Box, Text, useInput } from "ink";
 import { useAtomValue } from "jotai";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useBoardQuery } from "./api/get-board.query.js";
 import { useIssueQuery } from "./api/get-issues.query.js";
-import { useTransitionIssueMutation } from "./api/transition-issue.mutation.js";
 import { useUpdateIssueMutation } from "./api/update-issue.mutation.js";
 import {
   closeModal,
@@ -13,41 +12,88 @@ import {
   modalsAtom,
 } from "./atoms/modals.atom.js";
 import { Board } from "./board.js";
+import { env } from "./env.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
 import { SelectUsersModal } from "./modals/select-users-modal.js";
 import { UpdateAssigneeModal } from "./modals/update-assignee.modal.js";
 import { ViewIssueModal } from "./modals/view-issue-modal.js";
+import type { JiraUser } from "./types/jira-user.js";
+
+const myAccountId = env.JIRA_ACCOUNT_ID;
+
+const HOTKEYS = [
+  { key: "u", description: "Filter users" },
+  myAccountId ? { key: "M", description: "Assigned to me" } : undefined,
+  { key: "o", description: "Open" },
+  { key: "a", description: "Change assignee" },
+  { key: "m", description: "Move issue" },
+].filter((x) => x !== undefined);
+
+const hotkeysDisplay = HOTKEYS.map(
+  ({ description, key }) => `${description}: ${key}`,
+).join(" | ");
 
 export const BoardView = () => {
   const { mutate: updateIssue } = useUpdateIssueMutation();
-  const { mutate: transitionIssue } = useTransitionIssueMutation();
 
   const { data: board } = useBoardQuery();
   const { data: issues } = useIssueQuery(board?.filter.jql);
 
   const isFetching = useIsFetching();
   const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
-  const [filteredUsers, setFilteredUsers] = useState<string[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<JiraUser[]>([]);
   const [selectUsersModalOpen, setSelectUsersModalOpen] = useState(false);
   const modals = useAtomValue(modalsAtom);
   const inputDisabled = useAtomValue(inputDisabledAtom);
 
-  useInput((input) => {
+  const queryClient = useQueryClient();
+
+  useInput((input, key) => {
     if (selectUsersModalOpen || inputDisabled) return;
 
     if (input === "u") {
       setSelectUsersModalOpen(true);
     }
+
+    if (me && input === "M") {
+      setFilteredUsers((current) => {
+        // If we're already filtering by me, remove the filter
+        if (current.length === 1 && current[0] === me) {
+          return [];
+        }
+
+        // Otherwise, overwrite the current filter with just me
+        return [me];
+      });
+    }
+
+    // Note: this also captures R when caps lock is enabled
+    if (input === "R" && key.shift) {
+      queryClient.invalidateQueries();
+    }
   });
 
-  const allUsers = [
-    ...new Set(
-      issues?.map((issue) => issue.fields.assignee.displayName),
-    ).values(),
-  ].filter((user) => user && user !== "Unassigned") as string[];
+  const usersById: Map<string, JiraUser> = useMemo(() => {
+    if (!issues) {
+      return new Map();
+    }
+
+    return new Map(
+      issues
+        .filter((issue) => issue.fields.assignee.displayName !== "Unassigned")
+        .map((issue) => [
+          issue.fields.assignee.accountId,
+          issue.fields.assignee,
+        ]),
+    );
+  }, [issues]);
+
+  const me = myAccountId ? usersById.get(myAccountId) : undefined;
 
   const viewIssue = issues?.find((issue) => issue.id === selectedIssue);
+
+  const allUsers = Array.from(usersById.values());
 
   return (
     <>
@@ -64,8 +110,9 @@ export const BoardView = () => {
       )}
       {board && issues && (
         <Box width={"100%"} justifyContent="space-between">
-          <Text> Filter users: u | Open: o</Text>
+          <Text>{` ${hotkeysDisplay}`}</Text>
           {isFetching > 0 && <Spinner label="Fetching" />}
+          <Text>{" Refresh: R "}</Text>
         </Box>
       )}
 

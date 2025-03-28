@@ -10,3 +10,11 @@ export const log = (text: string) => {
     }
   });
 };
+
+export const makeLogger = (prefix: string) => {
+  return {
+    log: (text: string) => {
+      log(`[${prefix}]: ${text}`);
+    },
+  };
+};
