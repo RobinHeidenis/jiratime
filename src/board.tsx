@@ -88,9 +88,7 @@ export const Board = ({
 
   const filteredIssues = issues.filter((issue) =>
     filteredUsers.some(
-      (user) =>
-        user.displayName === issue.fields.assignee.displayName ||
-        user.accountId === issue.fields.assignee.accountId,
+      (user) => user.accountId === issue.fields.assignee.accountId,
     ),
   );
 
