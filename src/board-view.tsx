@@ -107,15 +107,29 @@ export const BoardView = () => {
 
   const allUsers = Array.from(usersById.values());
 
+  const filteredIssuesBySearch = useMemo(() => {
+    if (!issues?.length || !boardSearch) {
+      return issues ?? [];
+    }
+
+    const needle = boardSearch.toLowerCase();
+    return issues.filter(
+      (issue) =>
+        issue.key.toLowerCase().includes(needle) ||
+        issue.fields.summary.toLowerCase().includes(needle),
+    );
+  }, [issues, boardSearch]);
+
   return (
     <>
       {board && issues ? (
         <Board
           boardConfiguration={board}
-          issues={issues}
+          issues={filteredIssuesBySearch}
           filteredUsers={filteredUsers.length ? filteredUsers : allUsers}
           ignoreInput={!!(selectUsersModalOpen || selectedIssue)}
           viewIssue={(id) => setSelectedIssue(id)}
+          preselectFirstIssue={searchState === "result"}
         />
       ) : (
         <Spinner label="Getting data from Jira" />
