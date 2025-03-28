@@ -21,7 +21,6 @@ export const useGetPrioritiesQuery = (projectId: string, enabled = true) => {
   return useQuery({
     queryKey: ["priorities"],
     queryFn: () => fetchPriorities(projectId),
-    gcTime: HOUR,
     staleTime: HOUR,
     enabled,
   });
