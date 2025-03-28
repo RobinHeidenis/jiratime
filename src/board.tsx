@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import type { z } from "zod";
 import type { boardWithFilter } from "./api/get-board.query.js";
 import type { Issue } from "./api/get-issues.query.js";
+import { isBoardSearchActiveAtom } from "./atoms/board-search.atom.js";
 import { highlightedIssueAtom } from "./atoms/highlighted-issue.atom.js";
 import { inputDisabledAtom, openModal } from "./atoms/modals.atom.js";
 import { scrollOffsetAtom } from "./atoms/scroll-offset.atom.js";
@@ -83,6 +84,9 @@ export const Board = ({
   const [scrollOffset, setScrollOffset] = useAtom(scrollOffsetAtom);
   const [highlightedIssue, setHighlightedIssue] = useAtom(highlightedIssueAtom);
   const inputDisabled = useAtomValue(inputDisabledAtom);
+  const [isBoardSearchActive, setIsBoardSearchActive] = useAtom(
+    isBoardSearchActiveAtom,
+  );
 
   const columns = boardConfiguration.columnConfig.columns.map((c) => c.name);
 
@@ -139,7 +143,17 @@ export const Board = ({
   );
 
   useInput((input, key) => {
-    if (inputDisabled) return;
+    if (isBoardSearchActive && !input && key.escape) {
+      setIsBoardSearchActive(false);
+      return;
+    }
+
+    if (inputDisabled || isBoardSearchActive) return;
+
+    if (input === "/") {
+      setIsBoardSearchActive(true);
+      return;
+    }
 
     if (input === "p") {
       openModal("updatePriority");

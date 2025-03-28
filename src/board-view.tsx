@@ -1,18 +1,23 @@
 import { Spinner } from "@inkjs/ui";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { Box, Text, useInput } from "ink";
-import { useAtomValue } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { useMemo, useState } from "react";
 import { useBoardQuery } from "./api/get-board.query.js";
 import { useIssueQuery } from "./api/get-issues.query.js";
 import { useTransitionIssueMutation } from "./api/transition-issue.mutation.js";
 import { useUpdateIssueMutation } from "./api/update-issue.mutation.js";
 import {
+  boardSearchAtom,
+  isBoardSearchActiveAtom,
+} from "./atoms/board-search.atom.js";
+import {
   closeModal,
   inputDisabledAtom,
   modalsAtom,
 } from "./atoms/modals.atom.js";
 import { Board } from "./board.js";
+import { Search } from "./components/search.js";
 import { env } from "./env.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
@@ -27,6 +32,7 @@ const HOTKEYS = [
   { key: "u", description: "Filter users" },
   myAccountId ? { key: "M", description: "Assigned to me" } : undefined,
   { key: "o", description: "Open" },
+  { key: "/", description: "Search" },
 ].filter((x) => x !== undefined);
 
 const hotkeysDisplay = HOTKEYS.map(
@@ -46,11 +52,14 @@ export const BoardView = () => {
   const [selectUsersModalOpen, setSelectUsersModalOpen] = useState(false);
   const modals = useAtomValue(modalsAtom);
   const inputDisabled = useAtomValue(inputDisabledAtom);
+  const [boardSearch, setBoardSearch] = useAtom(boardSearchAtom);
+
+  const isBoardSearchActive = useAtomValue(isBoardSearchActiveAtom);
 
   const queryClient = useQueryClient();
 
   useInput((input, key) => {
-    if (selectUsersModalOpen || inputDisabled) return;
+    if (selectUsersModalOpen || inputDisabled || isBoardSearchActive) return;
 
     if (input === "u") {
       setSelectUsersModalOpen(true);
@@ -108,13 +117,17 @@ export const BoardView = () => {
       ) : (
         <Spinner label="Getting data from Jira" />
       )}
-      {board && issues && (
-        <Box width={"100%"} justifyContent="space-between">
-          <Text>{` ${hotkeysDisplay}`}</Text>
-          {isFetching > 0 && <Spinner label="Fetching" />}
-          <Text>{" Refresh: R "}</Text>
-        </Box>
-      )}
+      {board &&
+        issues &&
+        (isBoardSearchActive ? (
+          <Search value={boardSearch} onChange={setBoardSearch} />
+        ) : (
+          <Box width={"100%"} justifyContent="space-between">
+            <Text>{` ${hotkeysDisplay}`}</Text>
+            {isFetching > 0 && <Spinner label="Fetching" />}
+            <Text>{" Refresh: R "}</Text>
+          </Box>
+        ))}
 
       {selectUsersModalOpen && (
         <SelectUsersModal
