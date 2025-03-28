@@ -49,7 +49,7 @@ export const BoardView = () => {
 
   const queryClient = useQueryClient();
 
-  useInput((input) => {
+  useInput((input, key) => {
     if (selectUsersModalOpen || inputDisabled) return;
 
     if (input === "u") {
@@ -68,7 +68,8 @@ export const BoardView = () => {
       });
     }
 
-    if (input === "R") {
+    // Note: this also captures R when caps lock is enabled
+    if (input === "R" && key.shift) {
       queryClient.invalidateQueries();
     }
   });

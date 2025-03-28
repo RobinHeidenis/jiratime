@@ -19,7 +19,6 @@ export const useGetUsersQuery = (issueId: string | number) => {
   return useQuery({
     queryKey: ["users"],
     queryFn: () => fetchUsers(issueId),
-    gcTime: HOUR,
     staleTime: HOUR,
   });
 };

@@ -26,7 +26,6 @@ export const useGetIssueTransitionsQuery = (
   return useQuery({
     queryKey: ["priorities", issueId],
     queryFn: () => fetchIssueTransitions(issueId),
-    gcTime: HOUR,
     staleTime: HOUR,
     enabled,
   });
