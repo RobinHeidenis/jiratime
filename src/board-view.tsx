@@ -29,6 +29,10 @@ const HOTKEYS = [
   { key: "o", description: "Open" },
 ].filter((x) => x !== undefined);
 
+const hotkeysDisplay = HOTKEYS.map(
+  ({ description, key }) => `${description}: ${key}`,
+).join(" | ");
+
 export const BoardView = () => {
   const { mutate: updateIssue } = useUpdateIssueMutation();
   const { mutate: transitionIssue } = useTransitionIssueMutation();
@@ -88,10 +92,6 @@ export const BoardView = () => {
 
   const viewIssue = issues?.find((issue) => issue.id === selectedIssue);
 
-  const hotkeys = HOTKEYS.map(
-    ({ description, key }) => `${description}: ${key}`,
-  ).join(" | ");
-
   const allUsers = Array.from(usersById.values());
 
   return (
@@ -109,7 +109,7 @@ export const BoardView = () => {
       )}
       {board && issues && (
         <Box width={"100%"} justifyContent="space-between">
-          <Text>{` ${hotkeys}`}</Text>
+          <Text>{` ${hotkeysDisplay}`}</Text>
           {isFetching > 0 && <Spinner label="Fetching" />}
           <Text>{" Refresh: R "}</Text>
         </Box>
