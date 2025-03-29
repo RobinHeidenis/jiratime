@@ -3,6 +3,13 @@ import { atom, useAtom } from "jotai";
 import { useStore } from "jotai";
 import { useEffect } from "react";
 import { useKeybinds } from "../hooks/use-keybinds.js";
+import {
+  CLOSE_KEY,
+  CONFIRM_KEY,
+  DOWN_KEY,
+  SPACE_KEY,
+  UP_KEY,
+} from "../lib/keybinds/keys.js";
 import type { JiraUser } from "../types/jira-user.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
@@ -47,13 +54,9 @@ export const SelectUsersModal = ({
     { view: "SelectUsersModal", unregister: true },
     (register) => {
       register({
-        key: "j",
+        ...DOWN_KEY,
         hidden: true,
         name: "Down",
-        aliases: [
-          { key: "", modifiers: ["downArrow"] },
-          { key: "n", modifiers: ["ctrl"] },
-        ],
         handler: () => {
           const options = store.get(optionsAtom);
 
@@ -64,20 +67,16 @@ export const SelectUsersModal = ({
       });
 
       register({
-        key: "k",
+        ...UP_KEY,
         hidden: true,
         name: "Up",
-        aliases: [
-          { key: "", modifiers: ["upArrow"] },
-          { key: "p", modifiers: ["ctrl"] },
-        ],
         handler: () => {
           store.set(focusedAtom, (prev) => Math.max(0, prev - 1));
         },
       });
 
       register({
-        key: "<space>",
+        ...SPACE_KEY,
         name: "Select",
         handler: () => {
           const focusedValue = store.get(focusedAtom);
@@ -95,12 +94,8 @@ export const SelectUsersModal = ({
       });
 
       register({
-        key: "<return>",
+        ...CONFIRM_KEY,
         name: "Select",
-        aliases: [
-          { key: "", modifiers: ["return"] },
-          { key: "y", modifiers: ["ctrl"] },
-        ],
         handler: () => {
           const selectedValue = store.get(selectedAtom);
           const options = store.get(optionsAtom);
@@ -114,9 +109,8 @@ export const SelectUsersModal = ({
       });
 
       register({
-        key: "q",
+        ...CLOSE_KEY,
         name: "Close",
-        aliases: [{ key: "", modifiers: ["escape"] }],
         handler: onClose,
       });
     },
