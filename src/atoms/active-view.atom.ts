@@ -2,6 +2,8 @@ import { atom } from "jotai";
 
 export const activeViewAtom = atom<string | null>(null);
 
+const prevViewStoreAtom = atom<string | null>(null);
+
 // Derived atom that keeps track of the previous view
 export const previousViewAtom = atom(
   (get) => get(activeViewAtom), // Read the current value
@@ -11,5 +13,3 @@ export const previousViewAtom = atom(
     set(prevViewStoreAtom, prev);
   },
 );
-
-const prevViewStoreAtom = atom<string | null>(null);
