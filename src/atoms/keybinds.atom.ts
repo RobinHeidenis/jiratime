@@ -2,6 +2,7 @@ import { atom } from "jotai";
 import { atomWithReducer } from "jotai/utils";
 import type { Keybind } from "../lib/keybinds/keybinds.js";
 import { activeViewAtom } from "./active-view.atom.js";
+import { boardSearchStateAtom } from "./board-search.atom.js";
 
 type RegisterKeybind = { type: "register"; keybind: Keybind; view: string };
 
@@ -43,6 +44,10 @@ const keybindReducer = (
 export const keybindReducerAtom = atomWithReducer(
   new Map<string, Keybind[]>(),
   keybindReducer,
+);
+
+export const ignoreKeybindsAtom = atom(
+  (get) => get(boardSearchStateAtom) === "active",
 );
 
 export const activeKeybindsAtom = atom((get) => {

@@ -1,18 +1,26 @@
 import { type Key, useInput } from "ink";
 import { useAtomValue } from "jotai";
-import { activeKeybindsAtom } from "./atoms/keybinds.atom.js";
+import {
+  activeKeybindsAtom,
+  ignoreKeybindsAtom,
+} from "./atoms/keybinds.atom.js";
 import type { Keybind } from "./lib/keybinds/keybinds.js";
 
 export const GlobalKeybindHandler = () => {
   const keybinds = useAtomValue(activeKeybindsAtom);
 
-  useInput((input, key) => {
-    for (const keybind of keybinds) {
-      if (shouldTrigger(keybind, input, key)) {
-        keybind.handler();
+  const ignoreInputs = useAtomValue(ignoreKeybindsAtom);
+
+  useInput(
+    (input, key) => {
+      for (const keybind of keybinds) {
+        if (shouldTrigger(keybind, input, key)) {
+          keybind.handler();
+        }
       }
-    }
-  });
+    },
+    { isActive: !ignoreInputs },
+  );
 
   return null;
 };
