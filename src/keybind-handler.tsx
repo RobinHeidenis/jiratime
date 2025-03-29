@@ -14,6 +14,10 @@ export const GlobalKeybindHandler = () => {
   useInput(
     (input, key) => {
       for (const keybind of keybinds) {
+        if (keybind.when && !keybind.when()) {
+          continue;
+        }
+
         if (shouldTrigger(keybind, input, key)) {
           keybind.handler();
         }

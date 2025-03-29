@@ -1,20 +1,15 @@
 import { Box, Text, useInput } from "ink";
-import { useAtom, useAtomValue, useSetAtom } from "jotai/react";
+import { useAtom, useAtomValue } from "jotai/react";
 import { useCallback, useEffect } from "react";
 import type { z } from "zod";
 import type { boardWithFilter } from "./api/get-board.query.js";
 import type { Issue } from "./api/get-issues.query.js";
-import {
-  activateBoardSearchAtom,
-  boardSearchStateAtom,
-  deactivateBoardSearchAtom,
-} from "./atoms/board-search.atom.js";
+import { boardSearchStateAtom } from "./atoms/board-search.atom.js";
 import { highlightedIssueAtom } from "./atoms/highlighted-issue.atom.js";
-import { inputDisabledAtom, openModal } from "./atoms/modals.atom.js";
+import { inputDisabledAtom } from "./atoms/modals.atom.js";
 import { scrollOffsetAtom } from "./atoms/scroll-offset.atom.js";
 import { Column } from "./column.js";
 import { log } from "./lib/log.js";
-import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
 import type { JiraUser } from "./types/jira-user.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
@@ -62,37 +57,23 @@ const getColumn = (
   return groupedIssues[columnName.toLowerCase()] ?? [];
 };
 
-const getSelectedIssue = (
-  groupedIssues: Partial<Record<string, Issue[]>>,
-  columns: string[],
-  highlightedIssue: { column: number; index: number },
-) => {
-  return getColumn(groupedIssues, columns[highlightedIssue.column]!)[
-    highlightedIssue.index
-  ];
-};
-
 export const Board = ({
   boardConfiguration,
   issues,
   filteredUsers,
   ignoreInput = false,
-  viewIssue,
   preselectFirstIssue = false,
 }: {
   boardConfiguration: z.infer<typeof boardWithFilter>;
   issues: Issue[];
   filteredUsers: readonly JiraUser[];
   ignoreInput: boolean;
-  viewIssue: (id: string | null) => void;
   preselectFirstIssue?: boolean;
 }) => {
   const [width, height] = useStdoutDimensions();
   const [scrollOffset, setScrollOffset] = useAtom(scrollOffsetAtom);
   const [highlightedIssue, setHighlightedIssue] = useAtom(highlightedIssueAtom);
   const inputDisabled = useAtomValue(inputDisabledAtom);
-  const activateBoardSearch = useSetAtom(activateBoardSearchAtom);
-  const deactivateBoardSearch = useSetAtom(deactivateBoardSearchAtom);
   const isBoardSearchActive = useAtomValue(boardSearchStateAtom) === "active";
 
   const columns = boardConfiguration.columnConfig.columns.map((c) => c.name);
@@ -141,6 +122,7 @@ export const Board = ({
       column: issueColumn,
       index: issueIdxInColumn,
       id: firstIssue.id,
+      key: firstIssue.key,
     });
   }, [preselectFirstIssue]);
 
@@ -191,49 +173,23 @@ export const Board = ({
   );
 
   useInput((input, key) => {
-    if (isBoardSearchActive && key.return) {
-      deactivateBoardSearch();
-      return;
-    }
+    if (inputDisabled || isBoardSearchActive || ignoreInput) return;
 
-    if (inputDisabled || isBoardSearchActive) return;
-
-    if (input === "/") {
-      activateBoardSearch();
-      return;
-    }
-
-    if (input === "a") {
-      openModal("updateAssignee");
-      return;
-    }
-    if (input === "m") {
-      openModal("moveIssue");
-      return;
-    }
-
-    if (ignoreInput) return;
-
-    if (key.return) {
-      const issue = getSelectedIssue(groupedIssues, columns, highlightedIssue);
-
-      viewIssue(issue?.id ?? null);
-    } else if (input === "o") {
-      const issue = getColumn(groupedIssues, columns[highlightedIssue.column]!)[
-        highlightedIssue.index
-      ];
-
-      openIssueInBrowser(issue?.key ?? "");
-    } else if (input === "j" || key.downArrow) {
+    // TODO: not ideal that these are in their own useInput, but might be necessary due to the moving of the board, etc.
+    // Maybe extract to a separate `useKeyboardNavigation` hook with callbacks for each direction?
+    if (input === "j" || key.downArrow) {
       setHighlightedIssue((prev) => {
         const column = getColumn(groupedIssues, columns[prev.column]!);
         const newIndex = Math.min(column.length - 1, prev.index + 1);
 
         checkAndSetOffsets("top", newIndex);
 
+        const issue = column[newIndex];
+
         return {
           ...prev,
-          id: column[newIndex]?.id ?? null,
+          id: issue?.id ?? null,
+          key: issue?.key ?? null,
           index: newIndex,
         };
       });
@@ -245,9 +201,12 @@ export const Board = ({
 
         checkAndSetOffsets("top", newIndex);
 
+        const issue = column[newIndex];
+
         return {
           ...prev,
-          id: column[newIndex]?.id ?? null,
+          id: issue?.id ?? null,
+          key: issue?.key ?? null,
           index: newIndex,
         };
       });
@@ -269,8 +228,11 @@ export const Board = ({
           }));
         }
 
+        const issue = column[newIssueIndex];
+
         return {
-          id: column[newIssueIndex]?.id ?? null,
+          id: issue?.id ?? null,
+          key: issue?.key ?? null,
           column: newIndex,
           index: newIssueIndex,
         };
@@ -294,8 +256,11 @@ export const Board = ({
           }));
         }
 
+        const issue = column[newIssueIndex];
+
         return {
-          id: column[newIssueIndex]?.id ?? null,
+          id: issue?.id ?? null,
+          key: issue?.key ?? null,
           column: newIndex,
           index: newIssueIndex,
         };

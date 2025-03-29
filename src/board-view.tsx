@@ -11,15 +11,20 @@ import {
   boardSearchStateAtom,
   resetBoardSearchAtom,
 } from "./atoms/board-search.atom.js";
+import { highlightedIssueAtom } from "./atoms/highlighted-issue.atom.js";
 import {
   closeModal,
   inputDisabledAtom,
   modalsAtom,
+  openModal,
 } from "./atoms/modals.atom.js";
+import { store } from "./atoms/store.js";
 import { Board } from "./board.js";
 import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
 import { useKeybinds } from "./hooks/use-keybinds.js";
+import { CONFIRM_KEY } from "./lib/keybinds/keys.js";
+import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
 import { SelectUsersModal } from "./modals/select-users-modal.js";
@@ -44,7 +49,7 @@ export const BoardView = () => {
   const [boardSearch, setBoardSearch] = useAtom(boardSearchAtom);
   const resetBoardSearch = useSetAtom(resetBoardSearchAtom);
 
-  const searchState = useAtomValue(boardSearchStateAtom);
+  const [searchState, setSearchState] = useAtom(boardSearchStateAtom);
 
   const queryClient = useQueryClient();
 
@@ -89,9 +94,22 @@ export const BoardView = () => {
         key: "/",
         name: "Search",
         handler: () => {
+          const searchState = store.get(boardSearchStateAtom);
           if (searchState === "disabled") {
-            resetBoardSearch();
+            store.set(boardSearchStateAtom, "active");
           }
+        },
+      });
+
+      register({
+        ...CONFIRM_KEY,
+        name: "View issue",
+        hidden: true,
+        when: () => store.get(boardSearchStateAtom) !== "active",
+        handler: () => {
+          const selectedIssue = store.get(highlightedIssueAtom);
+
+          setSelectedIssue(selectedIssue.id);
         },
       });
 
@@ -118,18 +136,10 @@ export const BoardView = () => {
       }
 
       register({
-        key: "o",
-        name: "Open",
-        handler: () => setSelectedIssue(issues?.[0]?.id ?? null),
-      });
-
-      register({
         key: "m",
         name: "Move issue",
         handler: () => {
-          if (selectedIssue) {
-            closeModal("moveIssue");
-          }
+          openModal("moveIssue");
         },
       });
 
@@ -137,9 +147,21 @@ export const BoardView = () => {
         key: "a",
         name: "Change assignee",
         handler: () => {
-          if (selectedIssue) {
-            closeModal("updateAssignee");
+          openModal("updateAssignee");
+        },
+      });
+
+      register({
+        key: "o",
+        name: "Open",
+        handler: () => {
+          const selectedIssue = store.get(highlightedIssueAtom);
+
+          if (!selectedIssue?.key) {
+            return;
           }
+
+          openIssueInBrowser(selectedIssue.key);
         },
       });
 
@@ -161,7 +183,6 @@ export const BoardView = () => {
           issues={filteredIssuesBySearch}
           filteredUsers={filteredUsers.length ? filteredUsers : allUsers}
           ignoreInput={!!(selectUsersModalOpen || selectedIssue)}
-          viewIssue={(id) => setSelectedIssue(id)}
           preselectFirstIssue={searchState === "result"}
         />
       ) : (
@@ -182,6 +203,7 @@ export const BoardView = () => {
               onChange={setBoardSearch}
               onStopSearching={resetBoardSearch}
               onResetSearch={resetBoardSearch}
+              onConfirmSearch={() => setSearchState("result")}
             />
           </Box>
         ))}

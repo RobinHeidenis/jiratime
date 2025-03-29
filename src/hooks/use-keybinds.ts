@@ -66,6 +66,7 @@ export const useKeybinds: UseKeybinds = (options, callback, deps) => {
 function hash(keybind: Keybind) {
   return JSON.stringify({
     key: keybind.key,
+    name: keybind.name, // There might be multiple keybinds with the same key (e.g. for different conditions), so include the name
     modifiers: (keybind.modifiers ?? []).toSorted(),
   });
 }
