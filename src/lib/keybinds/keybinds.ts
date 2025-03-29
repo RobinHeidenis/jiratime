@@ -2,11 +2,14 @@ import type { Key } from "ink";
 import { keybindReducerAtom } from "../../atoms/keybinds.atom.js";
 import { store } from "../../atoms/store.js";
 
+type Alias = string | { key: string; modifiers?: ReadonlyArray<keyof Key> };
+
 export type Keybind = {
   key: string;
   modifiers?: ReadonlyArray<keyof Key>;
-  handler: () => void;
+  aliases?: readonly Alias[];
   name: string;
+  handler: () => void;
   description?: string;
 };
 
