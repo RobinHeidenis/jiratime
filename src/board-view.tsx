@@ -189,7 +189,6 @@ export const BoardView = () => {
       {selectUsersModalOpen && (
         <SelectUsersModal
           title={"Select users to show issues from:"}
-          footer={"Select: <space> | Confirm: <return> | Cancel: q"}
           selected={filteredUsers.length ? filteredUsers : allUsers}
           options={allUsers}
           onSelect={(selectedUsers) => setFilteredUsers(selectedUsers)}
