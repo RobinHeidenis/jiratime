@@ -5,13 +5,19 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
 import { useBoardQuery } from "./api/get-board.query.js";
 import { useIssueQuery } from "./api/get-issues.query.js";
+import { useUpdateIssueMutation } from "./api/update-issue.mutation.js";
 import {
   boardSearchAtom,
   boardSearchStateAtom,
   resetBoardSearchAtom,
 } from "./atoms/board-search.atom.js";
 import { highlightedIssueAtom } from "./atoms/highlighted-issue.atom.js";
-import { closeModal, modalsAtom, openModal } from "./atoms/modals.atom.js";
+import {
+  type ModalKey,
+  closeModal,
+  modalsAtom,
+  openModal,
+} from "./atoms/modals.atom.js";
 import { store } from "./atoms/store.js";
 import { viewedIssueAtom } from "./atoms/viewed-issue.atom.js";
 import { Board } from "./board.js";
@@ -21,6 +27,7 @@ import { useKeybinds } from "./hooks/use-keybinds.js";
 import { CONFIRM_KEY } from "./lib/keybinds/keys.js";
 import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
+import { SelectPriorityModal } from "./modals/select-priority-modal.js";
 import { SelectUsersModal } from "./modals/select-users-modal.js";
 import { UpdateAssigneeModal } from "./modals/update-assignee.modal.js";
 import { ViewIssueModal } from "./modals/view-issue-modal.js";
@@ -31,6 +38,7 @@ const myAccountId = env.JIRA_ACCOUNT_ID;
 export const BoardView = () => {
   const { data: board } = useBoardQuery();
   const { data: issues } = useIssueQuery(board?.filter.jql);
+  const { mutate: updateIssue } = useUpdateIssueMutation();
 
   const isFetching = useIsFetching();
   const [filteredUsers, setFilteredUsers] = useState<JiraUser[]>([]);
@@ -40,6 +48,7 @@ export const BoardView = () => {
   const resetBoardSearch = useSetAtom(resetBoardSearchAtom);
 
   const [searchState, setSearchState] = useAtom(boardSearchStateAtom);
+  const [modalIssueId, setModalIssueId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -165,6 +174,11 @@ export const BoardView = () => {
     [me],
   );
 
+  const onOpenModal = (type: ModalKey, issueId: string) => {
+    setModalIssueId(issueId);
+    openModal(type);
+  };
+
   return (
     <>
       {board && issues ? (
@@ -198,7 +212,7 @@ export const BoardView = () => {
           </Box>
         ))}
 
-      {!!viewedIssue && <ViewIssueModal />}
+      {!!viewedIssue && <ViewIssueModal openModal={onOpenModal} />}
       {selectUsersModalOpen && (
         <SelectUsersModal
           title={"Select users to show issues from:"}
@@ -208,7 +222,21 @@ export const BoardView = () => {
           onClose={() => setSelectUsersModalOpen(false)}
         />
       )}
-      {modals.updateAssignee && <UpdateAssigneeModal />}
+
+      {modals.updatePriority && modalIssueId && (
+        <SelectPriorityModal
+          onClose={() => closeModal("updatePriority")}
+          onSelect={(priority) =>
+            updateIssue({
+              issueId: modalIssueId,
+              fields: {
+                priority: { id: priority.value, name: priority.label },
+              },
+            })
+          }
+        />
+      )}
+      {modals.updateAssignee && <UpdateAssigneeModal issueId={modalIssueId} />}
       {modals.moveIssue && (
         <SelectLaneModal onClose={() => closeModal("moveIssue")} />
       )}

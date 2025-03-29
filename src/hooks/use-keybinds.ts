@@ -57,7 +57,6 @@ export const useKeybinds: UseKeybinds = (options, callback, deps) => {
     };
   }, []);
 
-  // Unregister all keybinds when the component unmounts
   useEffect(() => {
     actualCallback(registerFn);
   }, [registerFn, actualCallback, ...deps]);

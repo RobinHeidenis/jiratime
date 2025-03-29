@@ -16,8 +16,8 @@ export const openModal = (modal: keyof ExtractAtomValue<typeof modalsAtom>) => {
   store.set(modalsAtom, (prev) => ({ ...prev, [modal]: true }));
 };
 
-export const closeModal = (
-  modal: keyof ExtractAtomValue<typeof modalsAtom>,
-) => {
+export const closeModal = (modal: ModalKey) => {
   store.set(modalsAtom, (prev) => ({ ...prev, [modal]: false }));
 };
+
+export type ModalKey = keyof ExtractAtomValue<typeof modalsAtom>;
