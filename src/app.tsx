@@ -4,6 +4,7 @@ import { Box, Text } from "ink";
 import { Provider as JotaiProvider } from "jotai";
 import { store } from "./atoms/store.js";
 import { BoardView } from "./board-view.js";
+import { GlobalKeybindHandler } from "./keybind-handler.js";
 import { createFilePersister } from "./lib/query-storage-persister.js";
 
 const queryClient = new QueryClient({
@@ -23,6 +24,7 @@ export const App = () => {
         client={queryClient}
         persistOptions={{ persister }}
       >
+        <GlobalKeybindHandler />
         <Box flexDirection="column" width={"100%"} height={"100%"}>
           <Text> JIRA TIME</Text>
           <Box

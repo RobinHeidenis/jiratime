@@ -1,6 +1,6 @@
 import { Spinner } from "@inkjs/ui";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
-import { Box, Text, useInput } from "ink";
+import { Box, Text } from "ink";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
 import { useBoardQuery } from "./api/get-board.query.js";
@@ -11,6 +11,7 @@ import {
   boardSearchStateAtom,
   resetBoardSearchAtom,
 } from "./atoms/board-search.atom.js";
+import { keybindsDisplayAtom } from "./atoms/keybinds.atom.js";
 import {
   closeModal,
   inputDisabledAtom,
@@ -19,6 +20,7 @@ import {
 import { Board } from "./board.js";
 import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
+import { useKeybinds } from "./hooks/use-keybinds.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
 import { SelectUsersModal } from "./modals/select-users-modal.js";
@@ -27,19 +29,6 @@ import { ViewIssueModal } from "./modals/view-issue-modal.js";
 import type { JiraUser } from "./types/jira-user.js";
 
 const myAccountId = env.JIRA_ACCOUNT_ID;
-
-const HOTKEYS = [
-  { key: "u", description: "Filter users" },
-  myAccountId ? { key: "M", description: "Assigned to me" } : undefined,
-  { key: "o", description: "Open" },
-  { key: "/", description: "Search" },
-  { key: "a", description: "Change assignee" },
-  { key: "m", description: "Move issue" },
-].filter((x) => x !== undefined);
-
-const hotkeysDisplay = HOTKEYS.map(
-  ({ description, key }) => `${description}: ${key}`,
-).join(" | ");
 
 export const BoardView = () => {
   const { mutate: updateIssue } = useUpdateIssueMutation();
@@ -60,31 +49,7 @@ export const BoardView = () => {
 
   const queryClient = useQueryClient();
 
-  useInput((input, key) => {
-    if (selectUsersModalOpen || inputDisabled || searchState === "active")
-      return;
-
-    if (input === "u") {
-      setSelectUsersModalOpen(true);
-    }
-
-    if (me && input === "M") {
-      setFilteredUsers((current) => {
-        // If we're already filtering by me, remove the filter
-        if (current.length === 1 && current[0] === me) {
-          return [];
-        }
-
-        // Otherwise, overwrite the current filter with just me
-        return [me];
-      });
-    }
-
-    // Note: this also captures R when caps lock is enabled
-    if (input === "R" && key.shift) {
-      queryClient.invalidateQueries();
-    }
-  });
+  const keybindsDisplay = useAtomValue(keybindsDisplayAtom);
 
   const usersById: Map<string, JiraUser> = useMemo(() => {
     if (!issues) {
@@ -120,6 +85,76 @@ export const BoardView = () => {
     );
   }, [issues, boardSearch]);
 
+  useKeybinds(
+    (register) => {
+      register({
+        key: "/",
+        name: "Search",
+        handler: () => {
+          if (searchState === "disabled") {
+            resetBoardSearch();
+          }
+        },
+      });
+
+      register({
+        key: "u",
+        name: "Filter users",
+        handler: () => setSelectUsersModalOpen(true),
+      });
+
+      if (me) {
+        register({
+          key: "M",
+          modifiers: ["shift"],
+          name: "Assigned to me",
+          handler: () =>
+            setFilteredUsers((current) => {
+              if (current.length === 1 && current[0] === me) {
+                return [];
+              }
+
+              return [me];
+            }),
+        });
+      }
+
+      register({
+        key: "o",
+        name: "Open",
+        handler: () => setSelectedIssue(issues?.[0]?.id ?? null),
+      });
+
+      register({
+        key: "m",
+        name: "Move issue",
+        handler: () => {
+          if (selectedIssue) {
+            closeModal("moveIssue");
+          }
+        },
+      });
+
+      register({
+        key: "a",
+        name: "Change assignee",
+        handler: () => {
+          if (selectedIssue) {
+            closeModal("updateAssignee");
+          }
+        },
+      });
+
+      register({
+        key: "R",
+        modifiers: ["shift"],
+        name: "Refresh",
+        handler: () => queryClient.invalidateQueries(),
+      });
+    },
+    [me],
+  );
+
   return (
     <>
       {board && issues ? (
@@ -138,9 +173,8 @@ export const BoardView = () => {
         issues &&
         (searchState === "disabled" ? (
           <Box width={"100%"} justifyContent="space-between">
-            <Text>{` ${hotkeysDisplay}`}</Text>
+            <Text>{` ${keybindsDisplay}`}</Text>
             {isFetching > 0 && <Spinner label="Fetching" />}
-            <Text>{" Refresh: R "}</Text>
           </Box>
         ) : (
           <Box>
