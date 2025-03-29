@@ -1,5 +1,7 @@
+import { Biome, type Configuration, Distribution } from "@biomejs/js-api";
 import chalk, { type ChalkInstance } from "chalk";
 import { format } from "date-fns";
+import stringWidth from "string-width";
 import terminalLink from "terminal-link";
 import wrapAnsi from "wrap-ansi";
 import { env } from "../../env.js";
@@ -34,6 +36,16 @@ import type {
   TopLevelNode,
 } from "./nodes.js";
 
+const getBiomeConfiguration = (maxLineWidth: number): Configuration => ({
+  formatter: {
+    enabled: true,
+    indentSize: 2,
+    indentStyle: "space",
+    lineWidth: Math.min(80, maxLineWidth - 6),
+    formatWithErrors: true,
+  },
+});
+
 export const ansiRegex = ({ onlyFirst = false } = {}) => {
   // Valid string terminator sequences are BEL, ESC\, and 0x9c
   const ST = "(?:\\u0007|\\u001B\\u005C|\\u009C)";
@@ -44,6 +56,10 @@ export const ansiRegex = ({ onlyFirst = false } = {}) => {
 
   return new RegExp(pattern, onlyFirst ? undefined : "g");
 };
+
+const biome = await Biome.create({
+  distribution: Distribution.NODE,
+});
 
 export class ADFRenderer {
   constructor(
@@ -171,17 +187,26 @@ export class ADFRenderer {
   }
 
   private codeBlock(node: CodeBlockNode) {
-    const textContent =
+    const textContent = (
       node.content?.flatMap((content) => {
         return content.text.split("\n");
-      }) ?? [];
-    const maxLineNumber = (textContent ?? []).length.toString().length;
+      }) ?? []
+    ).join("\n");
+
+    biome.applyConfiguration(getBiomeConfiguration(this.maxLineWidth));
+    const formattedText = biome.formatContent(textContent, {
+      filePath: "file.ts",
+    });
+
+    const splitFormattedText = formattedText.content.split("\n");
+
+    const maxLineNumber = (splitFormattedText ?? []).length.toString().length;
     const maxLineLength = Math.max(
-      ...(textContent?.map((line) => line.length) ?? []),
+      ...(splitFormattedText?.map((line) => line.length) ?? []),
     );
 
     const nodes =
-      textContent.map((line, i) => {
+      splitFormattedText.map((line, i) => {
         const lineNumber = `${i + 1}`.padStart(maxLineNumber, "⠀");
         return this.pad(
           chalk.bgHex("#364153")(
@@ -201,6 +226,10 @@ export class ADFRenderer {
   }
 
   private emoji(node: EmojiNode): string {
+    if (node.attrs.shortName === ":question_mark:") {
+      return "\uf059";
+    }
+
     return node.attrs.text ?? node.attrs.shortName ?? "";
   }
 
@@ -290,7 +319,6 @@ export class ADFRenderer {
           prefix = ` ${levelIndicators}• `;
         }
 
-        const indentation = " ".repeat(prefix.length);
         const text = this.renderInlineNodes(content.content || []);
 
         // Calculate available width for text
@@ -305,6 +333,7 @@ export class ADFRenderer {
 
         // Process wrapped lines
         const lines = wrapped.split("\n");
+        const indentation = " ".repeat(stringWidth(prefix));
         if (lines.length > 0) {
           // First line gets the number/bullet with level indicators
           nodes.push(`${prefix}${lines[0]}`);
