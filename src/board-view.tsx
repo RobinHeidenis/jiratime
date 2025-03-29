@@ -5,20 +5,15 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
 import { useBoardQuery } from "./api/get-board.query.js";
 import { useIssueQuery } from "./api/get-issues.query.js";
-import { useUpdateIssueMutation } from "./api/update-issue.mutation.js";
 import {
   boardSearchAtom,
   boardSearchStateAtom,
   resetBoardSearchAtom,
 } from "./atoms/board-search.atom.js";
 import { highlightedIssueAtom } from "./atoms/highlighted-issue.atom.js";
-import {
-  closeModal,
-  inputDisabledAtom,
-  modalsAtom,
-  openModal,
-} from "./atoms/modals.atom.js";
+import { closeModal, modalsAtom, openModal } from "./atoms/modals.atom.js";
 import { store } from "./atoms/store.js";
+import { viewedIssueAtom } from "./atoms/viewed-issue.atom.js";
 import { Board } from "./board.js";
 import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
@@ -26,7 +21,6 @@ import { useKeybinds } from "./hooks/use-keybinds.js";
 import { CONFIRM_KEY } from "./lib/keybinds/keys.js";
 import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
-import { SelectPriorityModal } from "./modals/select-priority-modal.js";
 import { SelectUsersModal } from "./modals/select-users-modal.js";
 import { UpdateAssigneeModal } from "./modals/update-assignee.modal.js";
 import { ViewIssueModal } from "./modals/view-issue-modal.js";
@@ -35,23 +29,21 @@ import type { JiraUser } from "./types/jira-user.js";
 const myAccountId = env.JIRA_ACCOUNT_ID;
 
 export const BoardView = () => {
-  const { mutate: updateIssue } = useUpdateIssueMutation();
-
   const { data: board } = useBoardQuery();
   const { data: issues } = useIssueQuery(board?.filter.jql);
 
   const isFetching = useIsFetching();
-  const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
   const [filteredUsers, setFilteredUsers] = useState<JiraUser[]>([]);
   const [selectUsersModalOpen, setSelectUsersModalOpen] = useState(false);
   const modals = useAtomValue(modalsAtom);
-  const inputDisabled = useAtomValue(inputDisabledAtom);
   const [boardSearch, setBoardSearch] = useAtom(boardSearchAtom);
   const resetBoardSearch = useSetAtom(resetBoardSearchAtom);
 
   const [searchState, setSearchState] = useAtom(boardSearchStateAtom);
 
   const queryClient = useQueryClient();
+
+  const viewedIssue = useAtomValue(viewedIssueAtom);
 
   const usersById: Map<string, JiraUser> = useMemo(() => {
     if (!issues) {
@@ -69,8 +61,6 @@ export const BoardView = () => {
   }, [issues]);
 
   const me = myAccountId ? usersById.get(myAccountId) : undefined;
-
-  const viewIssue = issues?.find((issue) => issue.id === selectedIssue);
 
   const allUsers = Array.from(usersById.values());
 
@@ -109,7 +99,7 @@ export const BoardView = () => {
         handler: () => {
           const selectedIssue = store.get(highlightedIssueAtom);
 
-          setSelectedIssue(selectedIssue.id);
+          store.set(viewedIssueAtom, selectedIssue.key);
         },
       });
 
@@ -182,7 +172,7 @@ export const BoardView = () => {
           boardConfiguration={board}
           issues={filteredIssuesBySearch}
           filteredUsers={filteredUsers.length ? filteredUsers : allUsers}
-          ignoreInput={!!(selectUsersModalOpen || selectedIssue)}
+          ignoreInput={!!selectUsersModalOpen}
           preselectFirstIssue={searchState === "result"}
         />
       ) : (
@@ -208,6 +198,7 @@ export const BoardView = () => {
           </Box>
         ))}
 
+      {!!viewedIssue && <ViewIssueModal />}
       {selectUsersModalOpen && (
         <SelectUsersModal
           title={"Select users to show issues from:"}
@@ -217,26 +208,7 @@ export const BoardView = () => {
           onClose={() => setSelectUsersModalOpen(false)}
         />
       )}
-      {selectedIssue && viewIssue && (
-        <ViewIssueModal
-          onClose={() => setSelectedIssue(null)}
-          issue={viewIssue}
-        />
-      )}
       {modals.updateAssignee && <UpdateAssigneeModal />}
-      {modals.updatePriority && viewIssue && (
-        <SelectPriorityModal
-          onClose={() => closeModal("updatePriority")}
-          onSelect={(priority) =>
-            updateIssue({
-              issueId: viewIssue.id,
-              fields: {
-                priority: { id: priority.value, name: priority.label },
-              },
-            })
-          }
-        />
-      )}
       {modals.moveIssue && (
         <SelectLaneModal onClose={() => closeModal("moveIssue")} />
       )}

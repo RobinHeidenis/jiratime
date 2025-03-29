@@ -8,6 +8,7 @@ import { boardSearchStateAtom } from "./atoms/board-search.atom.js";
 import { highlightedIssueAtom } from "./atoms/highlighted-issue.atom.js";
 import { inputDisabledAtom } from "./atoms/modals.atom.js";
 import { scrollOffsetAtom } from "./atoms/scroll-offset.atom.js";
+import { viewedIssueAtom } from "./atoms/viewed-issue.atom.js";
 import { Column } from "./column.js";
 import { log } from "./lib/log.js";
 import type { JiraUser } from "./types/jira-user.js";
@@ -75,6 +76,7 @@ export const Board = ({
   const [highlightedIssue, setHighlightedIssue] = useAtom(highlightedIssueAtom);
   const inputDisabled = useAtomValue(inputDisabledAtom);
   const isBoardSearchActive = useAtomValue(boardSearchStateAtom) === "active";
+  const hasViewedIssue = useAtomValue(viewedIssueAtom) !== null;
 
   const columns = boardConfiguration.columnConfig.columns.map((c) => c.name);
 
@@ -173,7 +175,8 @@ export const Board = ({
   );
 
   useInput((input, key) => {
-    if (inputDisabled || isBoardSearchActive || ignoreInput) return;
+    if (inputDisabled || isBoardSearchActive || ignoreInput || hasViewedIssue)
+      return;
 
     // TODO: not ideal that these are in their own useInput, but might be necessary due to the moving of the board, etc.
     // Maybe extract to a separate `useKeyboardNavigation` hook with callbacks for each direction?
