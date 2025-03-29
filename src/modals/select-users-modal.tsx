@@ -8,6 +8,7 @@ import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
 const focusedAtom = atom(0);
 const selectedAtom = atom<number[]>([]);
+const optionsAtom = atom<JiraUser[]>([]);
 
 export const SelectUsersModal = ({
   title,
@@ -33,7 +34,9 @@ export const SelectUsersModal = ({
         .map((option, i) => (initialSelected.includes(option) ? i : -1))
         .filter((i) => i !== -1),
     );
-  }, [setSelected, initialSelected, options]);
+
+    store.set(optionsAtom, options);
+  }, [setSelected, initialSelected, options, store.set]);
 
   const maxLength = Math.max(
     ...options.map((option) => option.displayName.length + 6),
@@ -41,7 +44,7 @@ export const SelectUsersModal = ({
   );
 
   useKeybinds(
-    "SelectUsersModal",
+    { view: "SelectUsersModal", unregister: true },
     (register) => {
       register({
         key: "j",
@@ -52,7 +55,11 @@ export const SelectUsersModal = ({
           { key: "n", modifiers: ["ctrl"] },
         ],
         handler: () => {
-          setFocused((prev) => Math.min(options.length - 1, prev + 1));
+          const options = store.get(optionsAtom);
+
+          store.set(focusedAtom, (prev) =>
+            Math.min(options.length - 1, prev + 1),
+          );
         },
       });
 
@@ -64,7 +71,9 @@ export const SelectUsersModal = ({
           { key: "", modifiers: ["upArrow"] },
           { key: "p", modifiers: ["ctrl"] },
         ],
-        handler: () => setFocused((prev) => Math.max(0, prev - 1)),
+        handler: () => {
+          store.set(focusedAtom, (prev) => Math.max(0, prev - 1));
+        },
       });
 
       register({
@@ -94,6 +103,7 @@ export const SelectUsersModal = ({
         ],
         handler: () => {
           const selectedValue = store.get(selectedAtom);
+          const options = store.get(optionsAtom);
           onSelect(
             selectedValue.length
               ? selectedValue.map((index) => options[index]!)

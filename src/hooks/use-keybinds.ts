@@ -5,12 +5,20 @@ import type { Keybind } from "../lib/keybinds/keybinds.js";
 import { registerKeybind as registerKeybindFn } from "../lib/keybinds/keybinds.js";
 
 type UseKeybinds = (
-  view: string,
+  options: {
+    /** The view that the keybinds are associated with, used to determine which keys are listened for. */
+    view: string;
+    /**
+     * Whether to unregister all keybinds when the component unmounts. Needed for modals that should only register
+     * their keybinds when they're open.
+     */
+    unregister?: boolean;
+  },
   callback: (register: (keybind: Keybind) => void) => void,
   deps: unknown[],
 ) => void;
 
-export const useKeybinds: UseKeybinds = (view, callback, deps) => {
+export const useKeybinds: UseKeybinds = (options, callback, deps) => {
   const unregisterKeybindFnsByRegistrar = useRef(
     new Map<string, ReturnType<typeof registerKeybindFn>>(),
   );
@@ -27,19 +35,25 @@ export const useKeybinds: UseKeybinds = (view, callback, deps) => {
       if (!seen) {
         unregisterKeybindFnsByRegistrar.current.set(
           keybindHash,
-          registerKeybindFn(view, keybind),
+          registerKeybindFn(options.view, keybind),
         );
       }
     },
-    [view],
+    [options.view],
   );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: only runs at startup
   useEffect(() => {
-    setActiveView(view);
+    setActiveView(options.view);
 
     return () => {
       setActiveView(prevView);
+
+      if (options.unregister) {
+        for (const unregisterKeybindFn of unregisterKeybindFnsByRegistrar.current.values()) {
+          unregisterKeybindFn();
+        }
+      }
     };
   }, []);
 
