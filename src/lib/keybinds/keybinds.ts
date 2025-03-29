@@ -11,16 +11,13 @@ export type Keybind = {
   name: string;
   handler: () => void;
   description?: string;
+  hidden?: boolean;
 };
 
-export const registerKeybind = (keybind: Keybind) => {
-  store.set(keybindReducerAtom, { type: "register", keybind });
+export const registerKeybind = (view: string, keybind: Keybind) => {
+  store.set(keybindReducerAtom, { type: "register", keybind, view });
 
   return () => {
-    unregisterKeybind(keybind);
+    store.set(keybindReducerAtom, { type: "unregister", keybind, view });
   };
-};
-
-export const unregisterKeybind = (keybind: Keybind) => {
-  store.set(keybindReducerAtom, { type: "unregister", keybind });
 };

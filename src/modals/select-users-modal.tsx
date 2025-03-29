@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
+import { useKeybinds } from "../hooks/use-keybinds.js";
 import type { JiraUser } from "../types/jira-user.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
@@ -32,6 +33,19 @@ export const SelectUsersModal = ({
     footer.length + 6,
   );
 
+  useKeybinds(
+    "SelectUsersModal",
+    (register) => {
+      register({
+        key: "q",
+        name: "Close",
+        aliases: [{ key: "", modifiers: ["escape"] }],
+        handler: onClose,
+      });
+    },
+    [],
+  );
+
   useInput((input, key) => {
     if (input === "j" || key.downArrow || (key.ctrl && input === "n")) {
       setFocused(Math.min(options.length - 1, focused + 1));
@@ -47,8 +61,6 @@ export const SelectUsersModal = ({
       onSelect(
         selected.length ? selected.map((index) => options[index]!) : options,
       );
-      onClose();
-    } else if (input === "q" || key.escape) {
       onClose();
     }
   });

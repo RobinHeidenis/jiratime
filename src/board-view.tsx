@@ -86,6 +86,7 @@ export const BoardView = () => {
   }, [issues, boardSearch]);
 
   useKeybinds(
+    "BoardView",
     (register) => {
       register({
         key: "/",
