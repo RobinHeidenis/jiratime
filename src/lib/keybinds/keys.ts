@@ -39,11 +39,6 @@ export const CLOSE_KEY = {
   aliases: [{ key: "", modifiers: ["escape"] }],
 } satisfies Partial<Keybind>;
 
-export const ESCAPE_KEY = {
-  key: "<esc>",
-  aliases: [{ key: "", modifiers: ["escape"] }],
-} satisfies Partial<Keybind>;
-
 export const SPACE_KEY = {
   key: "<space>",
 } satisfies Partial<Keybind>;

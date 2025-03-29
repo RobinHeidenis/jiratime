@@ -60,9 +60,7 @@ export const SelectLaneModal = ({
         },
       }))}
       title={"Select lane"}
-      footer={" Confirm: <return> | Cancel: q"}
       selected={selectedTransition!.id}
-      initialFocusOnSelected
       onSelect={(choice: Option) => {
         if (choice.value !== selectedTransition!.id) {
           transitionIssue({
