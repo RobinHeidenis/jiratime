@@ -5,6 +5,7 @@ import { Provider as JotaiProvider } from "jotai";
 import { store } from "./atoms/store.js";
 import { BoardView } from "./board-view.js";
 import { GlobalKeybindHandler } from "./keybind-handler.js";
+import { KeybindsDisplay } from "./keybinds-display.js";
 import { createFilePersister } from "./lib/query-storage-persister.js";
 
 const queryClient = new QueryClient({
@@ -34,6 +35,7 @@ export const App = () => {
             flexDirection="column"
           >
             <BoardView />
+            <KeybindsDisplay />
           </Box>
         </Box>
       </PersistQueryClientProvider>

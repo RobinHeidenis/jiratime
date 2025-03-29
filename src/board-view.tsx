@@ -11,7 +11,6 @@ import {
   boardSearchStateAtom,
   resetBoardSearchAtom,
 } from "./atoms/board-search.atom.js";
-import { keybindsDisplayAtom } from "./atoms/keybinds.atom.js";
 import {
   closeModal,
   inputDisabledAtom,
@@ -48,8 +47,6 @@ export const BoardView = () => {
   const searchState = useAtomValue(boardSearchStateAtom);
 
   const queryClient = useQueryClient();
-
-  const keybindsDisplay = useAtomValue(keybindsDisplayAtom);
 
   const usersById: Map<string, JiraUser> = useMemo(() => {
     if (!issues) {
@@ -174,7 +171,6 @@ export const BoardView = () => {
         issues &&
         (searchState === "disabled" ? (
           <Box width={"100%"} justifyContent="space-between">
-            <Text>{` ${keybindsDisplay}`}</Text>
             {isFetching > 0 && <Spinner label="Fetching" />}
           </Box>
         ) : (
