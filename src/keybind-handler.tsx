@@ -23,7 +23,7 @@ const shouldTrigger = (
   key: Key,
 ) => {
   const isMatchingBase =
-    keybind.key === input &&
+    resolveKey(keybind.key) === input &&
     (!keybind.modifiers?.length ||
       keybind.modifiers.every((modifier) => !!key[modifier]));
 
@@ -37,13 +37,23 @@ const shouldTrigger = (
 
   return keybind.aliases.some((alias) => {
     if (typeof alias === "string") {
-      return alias === input;
+      return resolveKey(alias) === input;
     }
 
     return (
-      alias.key === input &&
+      resolveKey(alias.key) === input &&
       (!alias.modifiers?.length ||
         alias.modifiers.every((modifier) => !!key[modifier]))
     );
   });
+};
+
+const resolveKey = (key: string) => {
+  if (key === "<space>") return " ";
+
+  if (key === "<enter>" || key === "<return>" || key === "<CR>") return "\r";
+
+  if (key === "<esc>") return "";
+
+  return key;
 };
