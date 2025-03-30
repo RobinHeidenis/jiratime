@@ -8,9 +8,14 @@ import { GlobalKeybindHandler } from "./keybind-handler.js";
 import { KeybindsDisplay } from "./keybinds-display.js";
 import { createFilePersister } from "./lib/query-storage-persister.js";
 
+const isDev = process.env.NODE_ENV === "development";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      refetchOnWindowFocus: !isDev,
+      refetchOnReconnect: !isDev,
+      staleTime: isDev ? 1000 * 60 * 5 : undefined,
       gcTime: 1000 * 60 * 60 * 24 * 7, // 1 week
     },
   },

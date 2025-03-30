@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc --noEmit && vite build",
     "start": "FORCE_HYPERLINK=true node dist/cli.js",
-    "dev": "node dev.js",
+    "dev": "NODE_ENV=development node dev.js",
     "lint": "biome check"
   },
   "dependencies": {
