@@ -1,6 +1,5 @@
 import { Text } from "ink";
-import React from "react";
-import { ansiRegex } from "./lib/adf-renderer.js";
+import { ansiRegex } from "./lib/adf/adf-renderer.js";
 
 export const PaddedText = ({
   text,

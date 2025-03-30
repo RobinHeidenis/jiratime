@@ -1,21 +1,33 @@
 import { Box, Text, useInput } from "ink";
-import React from "react";
+import { useAtomValue } from "jotai";
+import { useState } from "react";
 import type { z } from "zod";
-import type { issue as issueSchema } from "./api/issue-query.js";
-import { env } from "./env.js";
-import { priorityMap } from "./issue.js";
-import { ADFRenderer } from "./lib/adf-renderer.js";
-import type { TopLevelNode } from "./lib/nodes.js";
-import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
-import { PaddedText } from "./padded-text.js";
-import { useStdoutDimensions } from "./useStdoutDimensions.js";
+import { prefetchIssueTransitions } from "../api/get-issue-transitions.query.js";
+import type { issue as issueSchema } from "../api/get-issues.query.js";
+import { prefetchPriorities } from "../api/get-priorities.query.js";
+import { prefetchUsers } from "../api/get-users.query.js";
+import { modalsAtom, openModal } from "../atoms/modals.atom.js";
+import { env } from "../env.js";
+import { priorityMap } from "../issue.js";
+import { ADFRenderer } from "../lib/adf/adf-renderer.js";
+import type { TopLevelNode } from "../lib/adf/nodes.js";
+import { openIssueInBrowser } from "../lib/utils/openIssueInBrowser.js";
+import { PaddedText } from "../padded-text.js";
+import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
 export const ViewIssueModal = ({
   issue,
   onClose,
-}: { issue: z.infer<typeof issueSchema>; onClose: () => void }) => {
+}: {
+  issue: z.infer<typeof issueSchema>;
+  onClose: () => void;
+}) => {
+  prefetchUsers(issue.id);
+  prefetchPriorities(issue.fields.project.id);
+  prefetchIssueTransitions(issue.id);
   const [columns, rows] = useStdoutDimensions();
-  const [topOffset, setTopOffset] = React.useState(0);
+  const [topOffset, setTopOffset] = useState(0);
+  const modals = useAtomValue(modalsAtom);
 
   const description = new ADFRenderer(119, 33).render(
     issue.fields.description?.content?.length
@@ -32,22 +44,29 @@ export const ViewIssueModal = ({
   const paddedText = description.map((line) => `${line} `).join("\n");
 
   useInput((input, key) => {
-    if (input === "o") {
-      openIssueInBrowser(issue.key);
-      return;
-    }
-
-    if (lines > 35) {
-      if (input === "j") {
-        setTopOffset((prev) => Math.min(prev + 3, lines - 33));
+    if (!modals.updateAssignee && !modals.updatePriority) {
+      if (input === "o") {
+        openIssueInBrowser(issue.key);
+        return;
       }
-      if (input === "k") {
-        setTopOffset((prev) => Math.max(prev - 3, 0));
-      }
-    }
 
-    if (input === "q" || key.escape) {
-      onClose();
+      if (input === "p") {
+        openModal("updatePriority");
+        return;
+      }
+
+      if (lines > 35) {
+        if (input === "j" || key.downArrow) {
+          setTopOffset((prev) => Math.min(prev + 3, lines - 33));
+        }
+        if (input === "k" || key.upArrow) {
+          setTopOffset((prev) => Math.max(prev - 3, 0));
+        }
+      }
+
+      if (input === "q" || key.escape) {
+        onClose();
+      }
     }
   });
 
@@ -116,7 +135,10 @@ export const ViewIssueModal = ({
           )}
         </Box>
       </Box>
-      <PaddedText text=" Open issue in browser: o | Close: q" maxLength={144} />
+      <PaddedText
+        text=" Open issue in browser: o | Update assignee: a | Update priority: p | Move issue: m | Close: q"
+        maxLength={144}
+      />
       {lines > 35 && (
         <Box
           position="absolute"

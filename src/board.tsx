@@ -1,16 +1,19 @@
 import { Box, Text, useInput } from "ink";
-import open from "open";
-import React, { useCallback, useState } from "react";
+import { useAtom, useAtomValue } from "jotai/react";
+import { useCallback } from "react";
 import type { z } from "zod";
-import type { boardWithFilter } from "./api/board-query.js";
-import type { issue } from "./api/issue-query.js";
+import type { boardWithFilter } from "./api/get-board.query.js";
+import type { Issue } from "./api/get-issues.query.js";
+import { highlightedIssueAtom } from "./atoms/highlighted-issue.atom.js";
+import { inputDisabledAtom, openModal } from "./atoms/modals.atom.js";
+import { scrollOffsetAtom } from "./atoms/scroll-offset.atom.js";
 import { Column } from "./column.js";
-import { env } from "./env.js";
 import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
+import type { JiraUser } from "./types/jira-user.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
-const groupIssuesByColumn = (
-  issues: z.infer<typeof issue>[],
+export const groupIssuesByColumn = (
+  issues: Issue[],
   columnConfig: { name: string; statuses: { id: string }[] }[],
 ) => {
   const statusMap = columnConfig.reduce(
@@ -23,8 +26,7 @@ const groupIssuesByColumn = (
     },
     {} as Record<string, string>,
   );
-
-  const columns: Record<string, z.infer<typeof issue>[]> = {};
+  const columns: Record<string, Issue[]> = {};
 
   for (const column of columnConfig) {
     columns[column.name.toLowerCase()] = [];
@@ -48,19 +50,19 @@ const groupIssuesByColumn = (
 };
 
 const getColumn = (
-  groupedIssues: Partial<Record<string, z.infer<typeof issue>[]>>,
+  groupedIssues: Partial<Record<string, Issue[]>>,
   columnName: string,
 ) => {
   return groupedIssues[columnName.toLowerCase()] ?? [];
 };
 
 const getSelectedIssue = (
-  groupedIssues: Partial<Record<string, z.infer<typeof issue>[]>>,
+  groupedIssues: Partial<Record<string, Issue[]>>,
   columns: string[],
-  selectedIssue: { columnIndex: number; issueIndex: number },
+  highlightedIssue: { column: number; index: number },
 ) => {
-  return getColumn(groupedIssues, columns[selectedIssue.columnIndex]!)[
-    selectedIssue.issueIndex
+  return getColumn(groupedIssues, columns[highlightedIssue.column]!)[
+    highlightedIssue.index
   ];
 };
 
@@ -72,23 +74,22 @@ export const Board = ({
   viewIssue,
 }: {
   boardConfiguration: z.infer<typeof boardWithFilter>;
-  issues: z.infer<typeof issue>[];
-  filteredUsers: string[];
+  issues: Issue[];
+  filteredUsers: readonly JiraUser[];
   ignoreInput: boolean;
   viewIssue: (id: string | null) => void;
 }) => {
   const [width, height] = useStdoutDimensions();
-  const [top, setTop] = useState(0);
-  const [left, setLeft] = useState(0);
-  const [selectedIssue, setSelectedIssue] = useState<{
-    columnIndex: number;
-    issueIndex: number;
-  }>({ columnIndex: 0, issueIndex: 0 });
+  const [scrollOffset, setScrollOffset] = useAtom(scrollOffsetAtom);
+  const [highlightedIssue, setHighlightedIssue] = useAtom(highlightedIssueAtom);
+  const inputDisabled = useAtomValue(inputDisabledAtom);
 
   const columns = boardConfiguration.columnConfig.columns.map((c) => c.name);
 
   const filteredIssues = issues.filter((issue) =>
-    filteredUsers.includes(issue.fields.assignee.displayName),
+    filteredUsers.some(
+      (user) => user.accountId === issue.fields.assignee.accountId,
+    ),
   );
 
   const groupedIssues = groupIssuesByColumn(
@@ -106,108 +107,135 @@ export const Board = ({
   const maxColumnOffset = Math.floor((columns.length ?? 0) - width / 36 + 1);
   const allColumnsVisible = (columns.length ?? 0) <= width / 36;
 
-  const checkAndSetTop = useCallback(
-    (newIndex: number) => {
-      if (newIndex * 7 - top + 10 > height - 7) {
-        setTop((prev) => prev + 7);
-      }
+  const checkAndSetOffsets = useCallback(
+    (dimension: "top" | "left", offset: number) => {
+      const { top, left } = scrollOffset;
 
-      if (newIndex * 7 - top - 10 < 0) {
-        setTop((prev) => Math.max(prev - 7, 0));
+      if (dimension === "top") {
+        if (offset * 7 - top + 10 > height - 7) {
+          setScrollOffset((prev) => ({ ...prev, top: prev.top + 7 }));
+        }
+
+        if (offset * 7 - top - 10 < 0) {
+          setScrollOffset((prev) => ({
+            ...prev,
+            top: Math.max(prev.top - 7, 0),
+          }));
+        }
+      } else {
+        if (offset * 36 - left + 36 > width) {
+          setScrollOffset((prev) => ({ ...prev, left: prev.left + 36 }));
+        }
+
+        if (offset * 36 - left - 36 < 0) {
+          setScrollOffset((prev) => ({
+            ...prev,
+            left: Math.max(prev.left - 36, 0),
+          }));
+        }
       }
     },
-    [top, height],
-  );
-
-  const checkAndSetLeft = useCallback(
-    (newIndex: number) => {
-      if (newIndex * 36 - left + 36 > width) {
-        setLeft((prev) => prev + 36);
-      }
-
-      if (newIndex * 36 - left - 36 < 0) {
-        setLeft((prev) => Math.max(prev - 36, 0));
-      }
-    },
-    [left, width],
+    [scrollOffset, height, width, setScrollOffset],
   );
 
   useInput((input, key) => {
+    if (inputDisabled) return;
+
+    if (input === "a") {
+      openModal("updateAssignee");
+      return;
+    }
+    if (input === "m") {
+      openModal("moveIssue");
+      return;
+    }
+
     if (ignoreInput) return;
 
     if (key.return) {
-      const issue = getSelectedIssue(groupedIssues, columns, selectedIssue);
+      const issue = getSelectedIssue(groupedIssues, columns, highlightedIssue);
 
       viewIssue(issue?.id ?? null);
     } else if (input === "o") {
-      const issue = getColumn(
-        groupedIssues,
-        columns[selectedIssue.columnIndex]!,
-      )[selectedIssue.issueIndex];
+      const issue = getColumn(groupedIssues, columns[highlightedIssue.column]!)[
+        highlightedIssue.index
+      ];
 
       openIssueInBrowser(issue?.key ?? "");
     } else if (input === "j" || key.downArrow) {
-      setSelectedIssue((prev) => {
-        const newIndex = Math.min(
-          getColumn(groupedIssues, columns[prev.columnIndex]!).length - 1,
-          prev.issueIndex + 1,
-        );
+      setHighlightedIssue((prev) => {
+        const column = getColumn(groupedIssues, columns[prev.column]!);
+        const newIndex = Math.min(column.length - 1, prev.index + 1);
 
-        checkAndSetTop(newIndex);
+        checkAndSetOffsets("top", newIndex);
 
         return {
           ...prev,
-          issueIndex: newIndex,
+          id: column[newIndex]?.id ?? null,
+          index: newIndex,
         };
       });
     } else if (input === "k" || key.upArrow) {
-      setSelectedIssue((prev) => {
-        const newIndex = Math.max(0, prev.issueIndex - 1);
+      setHighlightedIssue((prev) => {
+        const newIndex = Math.max(0, prev.index - 1);
 
-        checkAndSetTop(newIndex);
+        const column = getColumn(groupedIssues, columns[prev.column]!);
+
+        checkAndSetOffsets("top", newIndex);
 
         return {
           ...prev,
-          issueIndex: newIndex,
+          id: column[newIndex]?.id ?? null,
+          index: newIndex,
         };
       });
     } else if (input === "h" || key.leftArrow) {
-      setSelectedIssue((prev) => {
-        const newIndex = Math.max(0, prev.columnIndex - 1);
+      setHighlightedIssue((prev) => {
+        const newIndex = Math.max(0, prev.column - 1);
+        const column = getColumn(groupedIssues, columns[newIndex]!);
         const newIssueIndex = Math.min(
-          Math.max(getColumn(groupedIssues, columns[newIndex]!).length - 1, 0),
-          prev.issueIndex,
+          Math.max(column.length - 1, 0),
+          prev.index,
         );
 
-        checkAndSetLeft(newIndex);
+        checkAndSetOffsets("left", newIndex);
 
-        if (newIssueIndex * 7 < top) {
-          setTop(Math.max(newIssueIndex * 7 - 15, 0));
+        if (newIssueIndex * 7 < scrollOffset.top) {
+          setScrollOffset((prev) => ({
+            top: Math.max(newIssueIndex * 7 - 15, 0),
+            left: prev.left,
+          }));
         }
 
         return {
-          columnIndex: newIndex,
-          issueIndex: newIssueIndex,
+          id: column[newIssueIndex]?.id ?? null,
+          column: newIndex,
+          index: newIssueIndex,
         };
       });
     } else if (input === "l" || key.rightArrow) {
-      setSelectedIssue((prev) => {
-        const newIndex = Math.min(columns.length - 1, prev.columnIndex + 1);
+      setHighlightedIssue((prev) => {
+        const newIndex = Math.min(columns.length - 1, prev.column + 1);
 
+        const column = getColumn(groupedIssues, columns[newIndex]!);
         const newIssueIndex = Math.min(
-          Math.max(getColumn(groupedIssues, columns[newIndex]!).length - 1, 0),
-          prev.issueIndex,
+          Math.max(column.length - 1, 0),
+          prev.index,
         );
 
-        checkAndSetLeft(newIndex);
+        checkAndSetOffsets("left", newIndex);
 
-        if (newIssueIndex * 7 < top) {
-          setTop(Math.max(newIssueIndex * 7 - 15, 0));
+        if (newIssueIndex * 7 < scrollOffset.top) {
+          setScrollOffset((prev) => ({
+            left: prev.left,
+            top: Math.max(newIssueIndex * 7 - 15, 0),
+          }));
         }
 
         return {
-          columnIndex: newIndex,
-          issueIndex: newIssueIndex,
+          id: column[newIssueIndex]?.id ?? null,
+          column: newIndex,
+          index: newIssueIndex,
         };
       });
     }
@@ -218,24 +246,24 @@ export const Board = ({
       <Text>
         {" "}
         Selected users:{" "}
-        {filteredUsers.map((user) => user.split(" ")[0]).join(", ")}
+        {filteredUsers.map((user) => user.displayName.split(" ")[0]).join(", ")}
       </Text>
       <Box width={"100%"} overflow="hidden">
-        <Box gap={1} width={"100%"} marginLeft={-left}>
+        <Box gap={1} width={"100%"} marginLeft={-scrollOffset.left}>
           {columns?.map((name, index) => {
-            const distanceFromStart = (index + 1) * 36 - left;
+            const distanceFromStart = (index + 1) * 36 - scrollOffset.left;
             return (
               <Column
                 name={name}
                 key={name}
                 issues={getColumn(groupedIssues, name)}
-                top={top}
+                top={scrollOffset.top}
                 hideIssues={distanceFromStart > width}
                 distanceOffScreen={distanceFromStart - width}
                 shouldGrow={allColumnsVisible}
                 selectedIndex={
-                  index === selectedIssue.columnIndex
-                    ? selectedIssue.issueIndex
+                  index === highlightedIssue.column
+                    ? highlightedIssue.index
                     : undefined
                 }
               />
@@ -252,7 +280,9 @@ export const Board = ({
           borderStyle={"bold"}
           marginLeft={width - 3}
           marginTop={
-            totalHeight === 0 ? 0 : ((height / totalHeight) * top) / 2 - 3
+            totalHeight === 0
+              ? 0
+              : ((height / totalHeight) * scrollOffset.top) / 2 - 3
           }
         />
       </Box>
@@ -264,7 +294,7 @@ export const Board = ({
         borderRight={false}
         borderLeft={false}
         marginLeft={Math.min(
-          (width / 2 / maxColumnOffset) * (left / 36),
+          (width / 2 / maxColumnOffset) * (scrollOffset.left / 36),
           width / 2 - 2,
         )}
       />

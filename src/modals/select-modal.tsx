@@ -1,34 +1,50 @@
 import { Box, Text, useInput } from "ink";
-import React, { useState } from "react";
-import { useStdoutDimensions } from "./useStdoutDimensions.js";
+import { useState } from "react";
+import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
-export const SelectUsersModal = ({
+export interface Option {
+  label: string;
+  value: string;
+  color?: string;
+  extraData?: Record<string, unknown>;
+}
+export const SelectModal = ({
   title,
   footer,
   options,
-  selected: initialSelected,
+  selected,
+  initialFocusOnSelected = true,
   onSelect,
   onClose,
 }: {
   title: string;
   footer: string;
-  options: string[];
-  selected: string[];
-  onSelect: (selected: string[]) => void;
+  options: Option[];
+  selected: string;
+  initialFocusOnSelected?: boolean;
+  onSelect: (selected: Option) => void;
   onClose: () => void;
 }) => {
-  const [focused, setFocused] = useState(0);
-  const [selected, setSelected] = useState<number[]>(
-    options
-      .map((option, i) => (initialSelected.includes(option) ? i : -1))
-      .filter((i) => i !== -1),
+  const [focused, setFocused] = useState(
+    initialFocusOnSelected
+      ? options.findIndex((option) => option.value === selected)
+      : 0,
   );
   const [columns, rows] = useStdoutDimensions();
 
+  const hasColors = options.some((option) => option.color !== undefined);
+
+  // border + padding + arrow + space
+  // |   > Option 1 (selected) |
+  // |   Option 2              |
+  const standardWidth = 1 + 3 + 1 + 1;
+
   const maxLength = Math.max(
-    ...options.map((option) => option.length + 6),
-    title.length + 6,
-    footer.length + 6,
+    ...options.map(
+      (option) => option.label.length + standardWidth + (!hasColors ? 11 : 0),
+    ),
+    title.length + standardWidth,
+    footer.length + standardWidth,
   );
 
   useInput((input, key) => {
@@ -36,16 +52,8 @@ export const SelectUsersModal = ({
       setFocused(Math.min(options.length - 1, focused + 1));
     } else if (input === "k" || key.upArrow || (key.ctrl && input === "p")) {
       setFocused(Math.max(0, focused - 1));
-    } else if (input === " ") {
-      if (selected.includes(focused)) {
-        setSelected((selected) => selected.filter((s) => s !== focused));
-      } else {
-        setSelected((selected) => [...selected, focused]);
-      }
     } else if (key.return || (key.ctrl && input === "y")) {
-      onSelect(
-        selected.length ? selected.map((index) => options[index]!) : options,
-      );
+      onSelect(options[focused]!);
       onClose();
     } else if (input === "q" || key.escape) {
       onClose();
@@ -67,20 +75,20 @@ export const SelectUsersModal = ({
       </Text>
       {options.map((option, index) => {
         const text =
-          `   ${index === focused ? "> " : " "}${option} ${selected.includes(index) ? "✓" : " "}`.padEnd(
+          `   ${index === focused ? "> " : " "}${option.label} ${hasColors && option.value === selected ? "(selected) " : " "}`.padEnd(
             maxLength,
             " ",
           );
 
         return (
           <Text
-            key={option}
+            key={option.value}
             color={
               index === focused
                 ? "blue"
-                : selected.includes(index)
+                : !hasColors && selected === option.value
                   ? "green"
-                  : undefined
+                  : (option.color ?? undefined)
             }
           >
             {text}
