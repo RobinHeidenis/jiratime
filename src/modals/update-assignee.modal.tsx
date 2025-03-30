@@ -7,9 +7,9 @@ import { closeModal } from "../atoms/modals.atom.js";
 import { SelectUserModal } from "./select-user-modal.js";
 
 export const UpdateAssigneeModal = ({
-  issueId: _issueId,
+  issueId: issueIdOverride,
 }: { issueId?: string | null }) => {
-  const issueId = _issueId ?? useAtomValue(highlightedIssueAtom)?.id;
+  const issueId = issueIdOverride ?? useAtomValue(highlightedIssueAtom)?.id;
   const { mutate: updateIssue } = useUpdateIssueMutation();
   const queryClient = useQueryClient();
   const issues = queryClient.getQueryData(["issues"]) as Issue[];

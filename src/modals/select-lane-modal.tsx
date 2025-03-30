@@ -11,13 +11,13 @@ import { SelectModal } from "./select-modal.js";
 
 export const SelectLaneModal = ({
   onClose,
-  issueId: _issueId,
+  issueId: issueIdOverride,
 }: {
   onClose: () => void;
   issueId?: string | null;
 }) => {
   const { mutate: transitionIssue } = useTransitionIssueMutation();
-  const issueId = _issueId ?? useAtomValue(highlightedIssueAtom).id;
+  const issueId = issueIdOverride ?? useAtomValue(highlightedIssueAtom).id;
   const queryClient = useQueryClient();
   const issues = queryClient.getQueryData(["issues"]) as Issue[];
   const { data: board } = useBoardQuery();
