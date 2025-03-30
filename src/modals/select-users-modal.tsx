@@ -1,57 +1,121 @@
-import { Box, Text, useInput } from "ink";
-import { useState } from "react";
+import { Box, Text } from "ink";
+import { atom, useAtom } from "jotai";
+import { useStore } from "jotai";
+import { useEffect } from "react";
+import { useKeybinds } from "../hooks/use-keybinds.js";
+import {
+  CLOSE_KEY,
+  CONFIRM_KEY,
+  DOWN_KEY,
+  SPACE_KEY,
+  UP_KEY,
+} from "../lib/keybinds/keys.js";
 import type { JiraUser } from "../types/jira-user.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
+const focusedAtom = atom(0);
+const selectedAtom = atom<number[]>([]);
+const optionsAtom = atom<JiraUser[]>([]);
+
 export const SelectUsersModal = ({
   title,
-  footer,
   options,
   selected: initialSelected,
   onSelect,
   onClose,
 }: {
   title: string;
-  footer: string;
   options: JiraUser[];
   selected: JiraUser[];
   onSelect: (selected: JiraUser[]) => void;
   onClose: () => void;
 }) => {
-  const [focused, setFocused] = useState(0);
-  const [selected, setSelected] = useState<number[]>(
-    options
-      .map((option, i) => (initialSelected.includes(option) ? i : -1))
-      .filter((i) => i !== -1),
-  );
+  const [focused, setFocused] = useAtom(focusedAtom);
+  const [selected, setSelected] = useAtom(selectedAtom);
   const [columns, rows] = useStdoutDimensions();
+  const store = useStore();
+
+  useEffect(() => {
+    setSelected(
+      options
+        .map((option, i) => (initialSelected.includes(option) ? i : -1))
+        .filter((i) => i !== -1),
+    );
+
+    store.set(optionsAtom, options);
+  }, [setSelected, initialSelected, options, store.set]);
 
   const maxLength = Math.max(
     ...options.map((option) => option.displayName.length + 6),
     title.length + 6,
-    footer.length + 6,
   );
 
-  useInput((input, key) => {
-    if (input === "j" || key.downArrow || (key.ctrl && input === "n")) {
-      setFocused(Math.min(options.length - 1, focused + 1));
-    } else if (input === "k" || key.upArrow || (key.ctrl && input === "p")) {
-      setFocused(Math.max(0, focused - 1));
-    } else if (input === " ") {
-      if (selected.includes(focused)) {
-        setSelected((selected) => selected.filter((s) => s !== focused));
-      } else {
-        setSelected((selected) => [...selected, focused]);
-      }
-    } else if (key.return || (key.ctrl && input === "y")) {
-      onSelect(
-        selected.length ? selected.map((index) => options[index]!) : options,
-      );
-      onClose();
-    } else if (input === "q" || key.escape) {
-      onClose();
-    }
-  });
+  useKeybinds(
+    { view: "SelectUsersModal", unregister: true },
+    (register) => {
+      register({
+        ...DOWN_KEY,
+        hidden: true,
+        name: "Down",
+        handler: () => {
+          const options = store.get(optionsAtom);
+
+          store.set(focusedAtom, (prev) =>
+            Math.min(options.length - 1, prev + 1),
+          );
+        },
+      });
+
+      register({
+        ...UP_KEY,
+        hidden: true,
+        name: "Up",
+        handler: () => {
+          store.set(focusedAtom, (prev) => Math.max(0, prev - 1));
+        },
+      });
+
+      register({
+        ...SPACE_KEY,
+        name: "Select",
+        handler: () => {
+          const focusedValue = store.get(focusedAtom);
+          const selectedValue = store.get(selectedAtom);
+
+          if (selectedValue.includes(focusedValue)) {
+            store.set(
+              selectedAtom,
+              selectedValue.filter((s) => s !== focusedValue),
+            );
+          } else {
+            store.set(selectedAtom, [...selectedValue, focusedValue]);
+          }
+        },
+      });
+
+      register({
+        ...CONFIRM_KEY,
+        name: "Select",
+        handler: () => {
+          const selectedValue = store.get(selectedAtom);
+          const options = store.get(optionsAtom);
+          onSelect(
+            selectedValue.length
+              ? selectedValue.map((index) => options[index]!)
+              : options,
+          );
+          onClose();
+        },
+      });
+
+      register({
+        ...CLOSE_KEY,
+        name: "Close",
+        handler: onClose,
+      });
+    },
+    [],
+  );
 
   return (
     <Box
@@ -89,10 +153,6 @@ export const SelectUsersModal = ({
         );
       })}
       <Text>{"".padEnd(maxLength, " ")}</Text>
-      <Text color={"blueBright"}>
-        {"   "}
-        {footer.padEnd(maxLength - 3, " ")}
-      </Text>
     </Box>
   );
 };

@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { HOUR, request } from "./request.js";
 
@@ -23,8 +23,10 @@ export const useGetUsersQuery = (issueId: string | number) => {
   });
 };
 
-export const prefetchUsers = async (issueId: string | number) => {
-  const queryClient = useQueryClient();
+export const prefetchUsers = async (
+  queryClient: QueryClient,
+  issueId: string | number,
+) => {
   await queryClient.prefetchQuery({
     queryKey: ["users"],
     queryFn: () => fetchUsers(issueId),

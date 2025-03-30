@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { HOUR, request } from "./request.js";
 
@@ -31,8 +31,10 @@ export const useGetIssueTransitionsQuery = (
   });
 };
 
-export const prefetchIssueTransitions = async (issueId: string) => {
-  const queryClient = useQueryClient();
+export const prefetchIssueTransitions = async (
+  queryClient: QueryClient,
+  issueId: string,
+) => {
   await queryClient.prefetchQuery({
     queryKey: ["transitions"],
     queryFn: () => fetchIssueTransitions(issueId),

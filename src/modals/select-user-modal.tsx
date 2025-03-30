@@ -38,7 +38,6 @@ export const SelectUserModal = ({
           return a.label.localeCompare(b.label);
         })}
       title={"Select user"}
-      footer={" Confirm: <return> | Cancel: q"}
       selected={selectedUserId}
       onSelect={onSelect}
       onClose={onClose}

@@ -1,5 +1,15 @@
-import { Box, Text, useInput } from "ink";
-import { useState } from "react";
+import { Box, Text } from "ink";
+import { atom } from "jotai";
+import { useAtom } from "jotai";
+import { useEffect } from "react";
+import { store } from "../atoms/store.js";
+import { useKeybinds } from "../hooks/use-keybinds.js";
+import {
+  CLOSE_KEY,
+  CONFIRM_KEY,
+  DOWN_KEY,
+  UP_KEY,
+} from "../lib/keybinds/keys.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
 export interface Option {
@@ -8,9 +18,11 @@ export interface Option {
   color?: string;
   extraData?: Record<string, unknown>;
 }
+
+const focusedAtom = atom(0);
+
 export const SelectModal = ({
   title,
-  footer,
   options,
   selected,
   initialFocusOnSelected = true,
@@ -18,18 +30,20 @@ export const SelectModal = ({
   onClose,
 }: {
   title: string;
-  footer: string;
   options: Option[];
   selected: string;
   initialFocusOnSelected?: boolean;
   onSelect: (selected: Option) => void;
   onClose: () => void;
 }) => {
-  const [focused, setFocused] = useState(
-    initialFocusOnSelected
-      ? options.findIndex((option) => option.value === selected)
-      : 0,
-  );
+  const [focused, setFocused] = useAtom(focusedAtom);
+
+  useEffect(() => {
+    if (initialFocusOnSelected) {
+      setFocused(options.findIndex((option) => option.value === selected));
+    }
+  }, [initialFocusOnSelected, options, selected, setFocused]);
+
   const [columns, rows] = useStdoutDimensions();
 
   const hasColors = options.some((option) => option.color !== undefined);
@@ -44,21 +58,49 @@ export const SelectModal = ({
       (option) => option.label.length + standardWidth + (!hasColors ? 11 : 0),
     ),
     title.length + standardWidth,
-    footer.length + standardWidth,
   );
 
-  useInput((input, key) => {
-    if (input === "j" || key.downArrow || (key.ctrl && input === "n")) {
-      setFocused(Math.min(options.length - 1, focused + 1));
-    } else if (input === "k" || key.upArrow || (key.ctrl && input === "p")) {
-      setFocused(Math.max(0, focused - 1));
-    } else if (key.return || (key.ctrl && input === "y")) {
-      onSelect(options[focused]!);
-      onClose();
-    } else if (input === "q" || key.escape) {
-      onClose();
-    }
-  });
+  useKeybinds(
+    { view: `SelectModal-${title}`, unregister: true },
+    (register) => {
+      register({
+        ...UP_KEY,
+        name: "Up",
+        hidden: true,
+        handler: () => {
+          store.set(focusedAtom, (prev) => Math.max(0, prev - 1));
+        },
+      });
+
+      register({
+        ...DOWN_KEY,
+        name: "Down",
+        hidden: true,
+        handler: () => {
+          store.set(focusedAtom, (prev) =>
+            Math.min(options.length - 1, prev + 1),
+          );
+        },
+      });
+
+      register({
+        ...CONFIRM_KEY,
+        name: "Confirm",
+        handler: () => {
+          const focused = store.get(focusedAtom);
+          onSelect(options[focused]!);
+          onClose();
+        },
+      });
+
+      register({
+        ...CLOSE_KEY,
+        name: "Close",
+        handler: onClose,
+      });
+    },
+    [options],
+  );
 
   return (
     <Box
@@ -96,10 +138,6 @@ export const SelectModal = ({
         );
       })}
       <Text>{"".padEnd(maxLength, " ")}</Text>
-      <Text color={"blueBright"}>
-        {"   "}
-        {footer.padEnd(maxLength - 3, " ")}
-      </Text>
     </Box>
   );
 };

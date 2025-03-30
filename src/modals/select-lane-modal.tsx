@@ -11,16 +11,18 @@ import { SelectModal } from "./select-modal.js";
 
 export const SelectLaneModal = ({
   onClose,
+  issueId: issueIdOverride,
 }: {
   onClose: () => void;
+  issueId?: string | null;
 }) => {
   const { mutate: transitionIssue } = useTransitionIssueMutation();
-  const highlightedIssue = useAtomValue(highlightedIssueAtom);
+  const issueId = issueIdOverride ?? useAtomValue(highlightedIssueAtom).id;
   const queryClient = useQueryClient();
   const issues = queryClient.getQueryData(["issues"]) as Issue[];
   const { data: board } = useBoardQuery();
 
-  const issue = issues.find((issue) => issue.id === highlightedIssue.id)!;
+  const issue = issues.find((issue) => issue.id === issueId)!;
 
   const { data: transitions } = useGetIssueTransitionsQuery(
     issue?.id!,
@@ -60,9 +62,7 @@ export const SelectLaneModal = ({
         },
       }))}
       title={"Select lane"}
-      footer={" Confirm: <return> | Cancel: q"}
       selected={selectedTransition!.id}
-      initialFocusOnSelected
       onSelect={(choice: Option) => {
         if (choice.value !== selectedTransition!.id) {
           transitionIssue({

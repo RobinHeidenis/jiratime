@@ -37,7 +37,6 @@ export const SelectPriorityModal = ({
         color: priority.statusColor,
       }))}
       title={"Select priority"}
-      footer={" Confirm: <return> | Cancel: q"}
       selected={issue.fields.priority.id}
       onSelect={(choice: Option) => {
         if (choice.value !== issue.fields.priority.id) {

@@ -6,15 +6,19 @@ import { highlightedIssueAtom } from "../atoms/highlighted-issue.atom.js";
 import { closeModal } from "../atoms/modals.atom.js";
 import { SelectUserModal } from "./select-user-modal.js";
 
-export const UpdateAssigneeModal = () => {
-  const highlightedIssue = useAtomValue(highlightedIssueAtom);
+export const UpdateAssigneeModal = ({
+  issueId: issueIdOverride,
+}: { issueId?: string | null }) => {
+  const issueId = issueIdOverride ?? useAtomValue(highlightedIssueAtom)?.id;
   const { mutate: updateIssue } = useUpdateIssueMutation();
   const queryClient = useQueryClient();
   const issues = queryClient.getQueryData(["issues"]) as Issue[];
 
-  if (!issues) return <></>;
+  if (!issues) {
+    return null;
+  }
 
-  const issue = issues.find((issue) => issue.id === highlightedIssue.id)!;
+  const issue = issues.find((issue) => issue.id === issueId)!;
 
   return (
     <SelectUserModal

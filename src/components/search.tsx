@@ -12,15 +12,21 @@ type SearchProps = {
 export const SearchInput = ({
   state,
   onResetSearch,
+  onConfirmSearch,
   ...searchProps
 }: {
   state: "search" | "result";
   onResetSearch: () => void;
+  onConfirmSearch: () => void;
 } & SearchProps) => {
   useInput((_, key) => {
     if (key.escape && state === "result") {
       onResetSearch();
       return;
+    }
+
+    if (key.return && state === "search") {
+      onConfirmSearch();
     }
   });
 

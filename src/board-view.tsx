@@ -1,6 +1,6 @@
 import { Spinner } from "@inkjs/ui";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
-import { Box, Text, useInput } from "ink";
+import { Box, Text } from "ink";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
 import { useBoardQuery } from "./api/get-board.query.js";
@@ -11,14 +11,21 @@ import {
   boardSearchStateAtom,
   resetBoardSearchAtom,
 } from "./atoms/board-search.atom.js";
+import { highlightedIssueAtom } from "./atoms/highlighted-issue.atom.js";
 import {
+  type ModalKey,
   closeModal,
-  inputDisabledAtom,
   modalsAtom,
+  openModal,
 } from "./atoms/modals.atom.js";
+import { store } from "./atoms/store.js";
+import { viewedIssueAtom } from "./atoms/viewed-issue.atom.js";
 import { Board } from "./board.js";
 import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
+import { useKeybinds } from "./hooks/use-keybinds.js";
+import { CONFIRM_KEY } from "./lib/keybinds/keys.js";
+import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
 import { SelectUsersModal } from "./modals/select-users-modal.js";
@@ -28,63 +35,25 @@ import type { JiraUser } from "./types/jira-user.js";
 
 const myAccountId = env.JIRA_ACCOUNT_ID;
 
-const HOTKEYS = [
-  { key: "u", description: "Filter users" },
-  myAccountId ? { key: "M", description: "Assigned to me" } : undefined,
-  { key: "o", description: "Open" },
-  { key: "/", description: "Search" },
-  { key: "a", description: "Change assignee" },
-  { key: "m", description: "Move issue" },
-].filter((x) => x !== undefined);
-
-const hotkeysDisplay = HOTKEYS.map(
-  ({ description, key }) => `${description}: ${key}`,
-).join(" | ");
-
 export const BoardView = () => {
-  const { mutate: updateIssue } = useUpdateIssueMutation();
-
   const { data: board } = useBoardQuery();
   const { data: issues } = useIssueQuery(board?.filter.jql);
+  const { mutate: updateIssue } = useUpdateIssueMutation();
 
   const isFetching = useIsFetching();
-  const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
   const [filteredUsers, setFilteredUsers] = useState<JiraUser[]>([]);
   const [selectUsersModalOpen, setSelectUsersModalOpen] = useState(false);
   const modals = useAtomValue(modalsAtom);
-  const inputDisabled = useAtomValue(inputDisabledAtom);
   const [boardSearch, setBoardSearch] = useAtom(boardSearchAtom);
   const resetBoardSearch = useSetAtom(resetBoardSearchAtom);
+  const hasHighlightedIssue = !!useAtomValue(highlightedIssueAtom).id;
 
-  const searchState = useAtomValue(boardSearchStateAtom);
+  const [searchState, setSearchState] = useAtom(boardSearchStateAtom);
+  const [modalIssueId, setModalIssueId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
-  useInput((input, key) => {
-    if (selectUsersModalOpen || inputDisabled || searchState === "active")
-      return;
-
-    if (input === "u") {
-      setSelectUsersModalOpen(true);
-    }
-
-    if (me && input === "M") {
-      setFilteredUsers((current) => {
-        // If we're already filtering by me, remove the filter
-        if (current.length === 1 && current[0] === me) {
-          return [];
-        }
-
-        // Otherwise, overwrite the current filter with just me
-        return [me];
-      });
-    }
-
-    // Note: this also captures R when caps lock is enabled
-    if (input === "R" && key.shift) {
-      queryClient.invalidateQueries();
-    }
-  });
+  const viewedIssue = useAtomValue(viewedIssueAtom);
 
   const usersById: Map<string, JiraUser> = useMemo(() => {
     if (!issues) {
@@ -103,8 +72,6 @@ export const BoardView = () => {
 
   const me = myAccountId ? usersById.get(myAccountId) : undefined;
 
-  const viewIssue = issues?.find((issue) => issue.id === selectedIssue);
-
   const allUsers = Array.from(usersById.values());
 
   const filteredIssuesBySearch = useMemo(() => {
@@ -120,6 +87,101 @@ export const BoardView = () => {
     );
   }, [issues, boardSearch]);
 
+  useKeybinds(
+    { view: "BoardView" },
+    (register) => {
+      register({
+        key: "/",
+        name: "Search",
+        handler: () => {
+          const searchState = store.get(boardSearchStateAtom);
+          if (searchState === "disabled") {
+            store.set(boardSearchStateAtom, "active");
+          }
+        },
+      });
+
+      register({
+        ...CONFIRM_KEY,
+        name: "View issue",
+        hidden: true,
+        when: () =>
+          !!store.get(highlightedIssueAtom).id &&
+          store.get(boardSearchStateAtom) !== "active",
+        handler: () => {
+          const selectedIssue = store.get(highlightedIssueAtom);
+
+          store.set(viewedIssueAtom, selectedIssue.key);
+        },
+      });
+
+      register({
+        key: "u",
+        name: "Filter users",
+        handler: () => setSelectUsersModalOpen(true),
+      });
+
+      if (me) {
+        register({
+          key: "M",
+          modifiers: ["shift"],
+          name: "Assigned to me",
+          handler: () =>
+            setFilteredUsers((current) => {
+              if (current.length === 1 && current[0] === me) {
+                return [];
+              }
+
+              return [me];
+            }),
+        });
+      }
+
+      register({
+        key: "m",
+        name: "Move issue",
+        handler: () => {
+          openModal("moveIssue");
+        },
+      });
+
+      register({
+        key: "a",
+        name: "Change assignee",
+        handler: () => {
+          openModal("updateAssignee");
+        },
+      });
+
+      register({
+        key: "o",
+        name: "Open",
+        handler: () => {
+          const selectedIssue = store.get(highlightedIssueAtom);
+
+          if (!selectedIssue?.key) {
+            return;
+          }
+
+          openIssueInBrowser(selectedIssue.key);
+        },
+      });
+
+      register({
+        key: "R",
+        modifiers: ["shift"],
+        name: "Refresh",
+        handler: () => queryClient.invalidateQueries(),
+      });
+    },
+    [me],
+  );
+
+  const onOpenModal = (type: ModalKey, issueId: string) => {
+    setModalIssueId(issueId);
+    openModal(type);
+  };
+
   return (
     <>
       {board && issues ? (
@@ -127,8 +189,7 @@ export const BoardView = () => {
           boardConfiguration={board}
           issues={filteredIssuesBySearch}
           filteredUsers={filteredUsers.length ? filteredUsers : allUsers}
-          ignoreInput={!!(selectUsersModalOpen || selectedIssue)}
-          viewIssue={(id) => setSelectedIssue(id)}
+          ignoreInput={!!selectUsersModalOpen}
           preselectFirstIssue={searchState === "result"}
         />
       ) : (
@@ -138,9 +199,7 @@ export const BoardView = () => {
         issues &&
         (searchState === "disabled" ? (
           <Box width={"100%"} justifyContent="space-between">
-            <Text>{` ${hotkeysDisplay}`}</Text>
             {isFetching > 0 && <Spinner label="Fetching" />}
-            <Text>{" Refresh: R "}</Text>
           </Box>
         ) : (
           <Box>
@@ -151,42 +210,45 @@ export const BoardView = () => {
               onChange={setBoardSearch}
               onStopSearching={resetBoardSearch}
               onResetSearch={resetBoardSearch}
+              onConfirmSearch={() => setSearchState("result")}
             />
           </Box>
         ))}
 
-      {selectUsersModalOpen && (
+      {!!viewedIssue && <ViewIssueModal openModal={onOpenModal} />}
+      {(hasHighlightedIssue || modalIssueId) && selectUsersModalOpen && (
         <SelectUsersModal
           title={"Select users to show issues from:"}
-          footer={"Select: <space> | Confirm: <return> | Cancel: q"}
           selected={filteredUsers.length ? filteredUsers : allUsers}
           options={allUsers}
           onSelect={(selectedUsers) => setFilteredUsers(selectedUsers)}
           onClose={() => setSelectUsersModalOpen(false)}
         />
       )}
-      {selectedIssue && viewIssue && (
-        <ViewIssueModal
-          onClose={() => setSelectedIssue(null)}
-          issue={viewIssue}
-        />
+
+      {modals.updatePriority &&
+        modalIssueId &&
+        (hasHighlightedIssue || modalIssueId) && (
+          <SelectPriorityModal
+            onClose={() => closeModal("updatePriority")}
+            onSelect={(priority) =>
+              updateIssue({
+                issueId: modalIssueId,
+                fields: {
+                  priority: { id: priority.value, name: priority.label },
+                },
+              })
+            }
+          />
+        )}
+      {modals.updateAssignee && (hasHighlightedIssue || modalIssueId) && (
+        <UpdateAssigneeModal issueId={modalIssueId} />
       )}
-      {modals.updateAssignee && <UpdateAssigneeModal />}
-      {modals.updatePriority && viewIssue && (
-        <SelectPriorityModal
-          onClose={() => closeModal("updatePriority")}
-          onSelect={(priority) =>
-            updateIssue({
-              issueId: viewIssue.id,
-              fields: {
-                priority: { id: priority.value, name: priority.label },
-              },
-            })
-          }
+      {modals.moveIssue && (hasHighlightedIssue || modalIssueId) && (
+        <SelectLaneModal
+          issueId={modalIssueId}
+          onClose={() => closeModal("moveIssue")}
         />
-      )}
-      {modals.moveIssue && (
-        <SelectLaneModal onClose={() => closeModal("moveIssue")} />
       )}
     </>
   );
