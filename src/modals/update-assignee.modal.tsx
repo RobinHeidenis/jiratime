@@ -1,28 +1,25 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
-import type { Issue } from "../api/get-issues.query.js";
 import { useUpdateIssueMutation } from "../api/update-issue.mutation.js";
 import { highlightedIssueAtom } from "../atoms/highlighted-issue.atom.js";
 import { closeModal } from "../atoms/modals.atom.js";
+import { useIssue } from "../hooks/use-issue.js";
 import { SelectUserModal } from "./select-user-modal.js";
 
 export const UpdateAssigneeModal = ({
   issueId: issueIdOverride,
 }: { issueId?: string | null }) => {
-  const issueId = issueIdOverride ?? useAtomValue(highlightedIssueAtom)?.id;
+  const issue = useIssue(
+    issueIdOverride ?? useAtomValue(highlightedIssueAtom).id,
+  );
   const { mutate: updateIssue } = useUpdateIssueMutation();
-  const queryClient = useQueryClient();
-  const issues = queryClient.getQueryData(["issues"]) as Issue[];
 
-  if (!issues) {
+  if (!issue) {
     return null;
   }
 
-  const issue = issues.find((issue) => issue.id === issueId)!;
-
   return (
     <SelectUserModal
-      issueId={issue.id}
+      issue={issue}
       selectedUserId={issue.fields.assignee.accountId}
       onClose={() => closeModal("updateAssignee")}
       onSelect={(user) =>

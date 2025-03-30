@@ -1,6 +1,7 @@
 import { Box, Text } from "ink";
 import { atom, useAtom } from "jotai";
 import { useStore } from "jotai";
+import { useAtomValue } from "jotai";
 import { useEffect } from "react";
 import { useKeybinds } from "../hooks/use-keybinds.js";
 import {
@@ -30,7 +31,7 @@ export const SelectUsersModal = ({
   onSelect: (selected: JiraUser[]) => void;
   onClose: () => void;
 }) => {
-  const [focused, setFocused] = useAtom(focusedAtom);
+  const focused = useAtomValue(focusedAtom);
   const [selected, setSelected] = useAtom(selectedAtom);
   const [columns, rows] = useStdoutDimensions();
   const store = useStore();
