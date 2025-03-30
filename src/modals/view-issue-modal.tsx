@@ -23,24 +23,6 @@ import { useStdoutDimensions } from "../useStdoutDimensions.js";
 const issueAtom = atom<Issue | null>(null);
 const topOffsetAtom = atom(0);
 
-const issueDescriptionAtom = atom((get) => {
-  const issue = get(issueAtom);
-  if (!issue) {
-    return [];
-  }
-
-  return new ADFRenderer(MAX_LINE_WIDTH, MINIMUM_LINES).render(
-    issue.fields.description?.content?.length
-      ? (issue.fields.description.content as TopLevelNode[])
-      : [
-          {
-            type: "paragraph",
-            content: [{ type: "text", text: "No description." }],
-          },
-        ],
-  );
-});
-
 const MINIMUM_LINES = 33;
 const VIEWPORT_HEIGHT = 35;
 const MAX_LINE_WIDTH = 119;
@@ -58,8 +40,20 @@ export const ViewIssueModal = ({
 
   const [columns, rows] = useStdoutDimensions();
   const topOffset = useAtomValue(topOffsetAtom);
-  const description = useAtomValue(issueDescriptionAtom);
   const store = useStore();
+
+  const description = issue
+    ? new ADFRenderer(MAX_LINE_WIDTH, MINIMUM_LINES).render(
+        issue.fields.description?.content?.length
+          ? (issue.fields.description.content as TopLevelNode[])
+          : [
+              {
+                type: "paragraph",
+                content: [{ type: "text", text: "No description." }],
+              },
+            ],
+      )
+    : [];
 
   useEffect(() => {
     store.set(issueAtom, issue);
@@ -105,9 +99,8 @@ export const ViewIssueModal = ({
         ],
         name: "Scroll down",
         hidden: true,
-        when: () => store.get(issueDescriptionAtom).length > VIEWPORT_HEIGHT,
+        when: () => description.length > VIEWPORT_HEIGHT,
         handler: () => {
-          const description = store.get(issueDescriptionAtom);
           store.set(topOffsetAtom, (prev) =>
             Math.min(
               prev + SMALL_SCROLL_INCREMENT,
@@ -125,7 +118,7 @@ export const ViewIssueModal = ({
         ],
         name: "Scroll up",
         hidden: true,
-        when: () => store.get(issueDescriptionAtom).length > VIEWPORT_HEIGHT,
+        when: () => description.length > VIEWPORT_HEIGHT,
         handler: () => {
           store.set(topOffsetAtom, (prev) =>
             Math.max(prev - SMALL_SCROLL_INCREMENT, 0),
@@ -138,10 +131,9 @@ export const ViewIssueModal = ({
         modifiers: ["ctrl"],
         name: "Scroll down (fast)",
         hidden: true,
-        when: () => store.get(issueDescriptionAtom).length > VIEWPORT_HEIGHT,
+        when: () => description.length > VIEWPORT_HEIGHT,
         handler: () => {
           store.set(topOffsetAtom, (prev) => {
-            const description = store.get(issueDescriptionAtom);
             return Math.min(
               prev + LARGE_SCROLL_INCREMENT,
               description.length - MINIMUM_LINES,
@@ -155,7 +147,7 @@ export const ViewIssueModal = ({
         modifiers: ["ctrl"],
         name: "Scroll up (fast)",
         hidden: true,
-        when: () => store.get(issueDescriptionAtom).length > VIEWPORT_HEIGHT,
+        when: () => description.length > VIEWPORT_HEIGHT,
         handler: () => {
           store.set(topOffsetAtom, (prev) =>
             Math.max(prev - LARGE_SCROLL_INCREMENT, 0),
