@@ -64,6 +64,10 @@ export const ViewIssueModal = ({
   useEffect(() => {
     store.set(issueAtom, issue);
     store.set(topOffsetAtom, 0); // Reset scroll offset when issue changes
+
+    return () => {
+      store.set(issueAtom, null);
+    };
   }, [store, issue]);
 
   useKeybinds(
