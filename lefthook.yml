@@ -1,5 +1,8 @@
 pre-commit:
   commands:
+    tsc:
+      glob: "*.{ts,tsx}"
+      run: pnpm tsc --noEmit
     check:
       glob: "*.{ts,tsx,json,jsonc}"
       run: pnpm lint --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
