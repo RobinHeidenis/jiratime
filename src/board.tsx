@@ -1,13 +1,19 @@
 import { Box, Text, useInput } from "ink";
-import { useAtom, useAtomValue } from "jotai/react";
-import { useCallback } from "react";
+import { useAtom, useAtomValue, useSetAtom } from "jotai/react";
+import { useCallback, useEffect } from "react";
 import type { z } from "zod";
 import type { boardWithFilter } from "./api/get-board.query.js";
 import type { Issue } from "./api/get-issues.query.js";
+import {
+  activateBoardSearchAtom,
+  boardSearchStateAtom,
+  deactivateBoardSearchAtom,
+} from "./atoms/board-search.atom.js";
 import { highlightedIssueAtom } from "./atoms/highlighted-issue.atom.js";
 import { inputDisabledAtom, openModal } from "./atoms/modals.atom.js";
 import { scrollOffsetAtom } from "./atoms/scroll-offset.atom.js";
 import { Column } from "./column.js";
+import { log } from "./lib/log.js";
 import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
 import type { JiraUser } from "./types/jira-user.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
@@ -72,17 +78,22 @@ export const Board = ({
   filteredUsers,
   ignoreInput = false,
   viewIssue,
+  preselectFirstIssue = false,
 }: {
   boardConfiguration: z.infer<typeof boardWithFilter>;
   issues: Issue[];
   filteredUsers: readonly JiraUser[];
   ignoreInput: boolean;
   viewIssue: (id: string | null) => void;
+  preselectFirstIssue?: boolean;
 }) => {
   const [width, height] = useStdoutDimensions();
   const [scrollOffset, setScrollOffset] = useAtom(scrollOffsetAtom);
   const [highlightedIssue, setHighlightedIssue] = useAtom(highlightedIssueAtom);
   const inputDisabled = useAtomValue(inputDisabledAtom);
+  const activateBoardSearch = useSetAtom(activateBoardSearchAtom);
+  const deactivateBoardSearch = useSetAtom(deactivateBoardSearchAtom);
+  const isBoardSearchActive = useAtomValue(boardSearchStateAtom) === "active";
 
   const columns = boardConfiguration.columnConfig.columns.map((c) => c.name);
 
@@ -91,6 +102,47 @@ export const Board = ({
       (user) => user.accountId === issue.fields.assignee.accountId,
     ),
   );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only want to run this effect when preselectFirstIssue changes
+  useEffect(() => {
+    if (!preselectFirstIssue) {
+      return;
+    }
+
+    const firstIssue = filteredIssues[0];
+    if (!firstIssue) {
+      return;
+    }
+
+    const issueColumn = boardConfiguration.columnConfig.columns.findIndex(
+      (column) =>
+        column.statuses.some(
+          (status) => status.id === firstIssue.fields.status.id,
+        ),
+    );
+    if (issueColumn === -1) {
+      return;
+    }
+
+    const columnName =
+      boardConfiguration.columnConfig.columns[issueColumn]!.name;
+
+    const issueIdxInColumn = getColumn(groupedIssues, columnName).findIndex(
+      (issue) => issue.id === firstIssue.id,
+    );
+
+    // TODO: Remove debug log
+    log(
+      `preselectFirstIssue: ${firstIssue?.id} - ${columnName} - ${issueIdxInColumn}`,
+    );
+
+    // TODO: We need to recalibrate the scroll offset here, as the issue might be off-screen
+    setHighlightedIssue({
+      column: issueColumn,
+      index: issueIdxInColumn,
+      id: firstIssue.id,
+    });
+  }, [preselectFirstIssue]);
 
   const groupedIssues = groupIssuesByColumn(
     filteredIssues,
@@ -139,7 +191,17 @@ export const Board = ({
   );
 
   useInput((input, key) => {
-    if (inputDisabled) return;
+    if (isBoardSearchActive && key.return) {
+      deactivateBoardSearch();
+      return;
+    }
+
+    if (inputDisabled || isBoardSearchActive) return;
+
+    if (input === "/") {
+      activateBoardSearch();
+      return;
+    }
 
     if (input === "a") {
       openModal("updateAssignee");

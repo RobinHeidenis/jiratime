@@ -1,17 +1,23 @@
 import { Spinner } from "@inkjs/ui";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { Box, Text, useInput } from "ink";
-import { useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
 import { useBoardQuery } from "./api/get-board.query.js";
 import { useIssueQuery } from "./api/get-issues.query.js";
 import { useUpdateIssueMutation } from "./api/update-issue.mutation.js";
+import {
+  boardSearchAtom,
+  boardSearchStateAtom,
+  resetBoardSearchAtom,
+} from "./atoms/board-search.atom.js";
 import {
   closeModal,
   inputDisabledAtom,
   modalsAtom,
 } from "./atoms/modals.atom.js";
 import { Board } from "./board.js";
+import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
@@ -26,6 +32,7 @@ const HOTKEYS = [
   { key: "u", description: "Filter users" },
   myAccountId ? { key: "M", description: "Assigned to me" } : undefined,
   { key: "o", description: "Open" },
+  { key: "/", description: "Search" },
   { key: "a", description: "Change assignee" },
   { key: "m", description: "Move issue" },
 ].filter((x) => x !== undefined);
@@ -46,11 +53,16 @@ export const BoardView = () => {
   const [selectUsersModalOpen, setSelectUsersModalOpen] = useState(false);
   const modals = useAtomValue(modalsAtom);
   const inputDisabled = useAtomValue(inputDisabledAtom);
+  const [boardSearch, setBoardSearch] = useAtom(boardSearchAtom);
+  const resetBoardSearch = useSetAtom(resetBoardSearchAtom);
+
+  const searchState = useAtomValue(boardSearchStateAtom);
 
   const queryClient = useQueryClient();
 
   useInput((input, key) => {
-    if (selectUsersModalOpen || inputDisabled) return;
+    if (selectUsersModalOpen || inputDisabled || searchState === "active")
+      return;
 
     if (input === "u") {
       setSelectUsersModalOpen(true);
@@ -95,26 +107,53 @@ export const BoardView = () => {
 
   const allUsers = Array.from(usersById.values());
 
+  const filteredIssuesBySearch = useMemo(() => {
+    if (!issues?.length || !boardSearch) {
+      return issues ?? [];
+    }
+
+    const needle = boardSearch.toLowerCase();
+    return issues.filter(
+      (issue) =>
+        issue.key.toLowerCase().includes(needle) ||
+        issue.fields.summary.toLowerCase().includes(needle),
+    );
+  }, [issues, boardSearch]);
+
   return (
     <>
       {board && issues ? (
         <Board
           boardConfiguration={board}
-          issues={issues}
+          issues={filteredIssuesBySearch}
           filteredUsers={filteredUsers.length ? filteredUsers : allUsers}
           ignoreInput={!!(selectUsersModalOpen || selectedIssue)}
           viewIssue={(id) => setSelectedIssue(id)}
+          preselectFirstIssue={searchState === "result"}
         />
       ) : (
         <Spinner label="Getting data from Jira" />
       )}
-      {board && issues && (
-        <Box width={"100%"} justifyContent="space-between">
-          <Text>{` ${hotkeysDisplay}`}</Text>
-          {isFetching > 0 && <Spinner label="Fetching" />}
-          <Text>{" Refresh: R "}</Text>
-        </Box>
-      )}
+      {board &&
+        issues &&
+        (searchState === "disabled" ? (
+          <Box width={"100%"} justifyContent="space-between">
+            <Text>{` ${hotkeysDisplay}`}</Text>
+            {isFetching > 0 && <Spinner label="Fetching" />}
+            <Text>{" Refresh: R "}</Text>
+          </Box>
+        ) : (
+          <Box>
+            <Text> </Text>
+            <SearchInput
+              state={searchState === "active" ? "search" : "result"}
+              value={boardSearch ?? ""}
+              onChange={setBoardSearch}
+              onStopSearching={resetBoardSearch}
+              onResetSearch={resetBoardSearch}
+            />
+          </Box>
+        ))}
 
       {selectUsersModalOpen && (
         <SelectUsersModal
