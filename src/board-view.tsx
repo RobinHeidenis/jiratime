@@ -46,6 +46,7 @@ export const BoardView = () => {
   const modals = useAtomValue(modalsAtom);
   const [boardSearch, setBoardSearch] = useAtom(boardSearchAtom);
   const resetBoardSearch = useSetAtom(resetBoardSearchAtom);
+  const hasHighlightedIssue = !!useAtomValue(highlightedIssueAtom).id;
 
   const [searchState, setSearchState] = useAtom(boardSearchStateAtom);
   const [modalIssueId, setModalIssueId] = useState<string | null>(null);
@@ -104,7 +105,9 @@ export const BoardView = () => {
         ...CONFIRM_KEY,
         name: "View issue",
         hidden: true,
-        when: () => store.get(boardSearchStateAtom) !== "active",
+        when: () =>
+          !!store.get(highlightedIssueAtom).id &&
+          store.get(boardSearchStateAtom) !== "active",
         handler: () => {
           const selectedIssue = store.get(highlightedIssueAtom);
 
@@ -213,7 +216,7 @@ export const BoardView = () => {
         ))}
 
       {!!viewedIssue && <ViewIssueModal openModal={onOpenModal} />}
-      {selectUsersModalOpen && (
+      {(hasHighlightedIssue || modalIssueId) && selectUsersModalOpen && (
         <SelectUsersModal
           title={"Select users to show issues from:"}
           selected={filteredUsers.length ? filteredUsers : allUsers}
@@ -223,22 +226,29 @@ export const BoardView = () => {
         />
       )}
 
-      {modals.updatePriority && modalIssueId && (
-        <SelectPriorityModal
-          onClose={() => closeModal("updatePriority")}
-          onSelect={(priority) =>
-            updateIssue({
-              issueId: modalIssueId,
-              fields: {
-                priority: { id: priority.value, name: priority.label },
-              },
-            })
-          }
-        />
+      {modals.updatePriority &&
+        modalIssueId &&
+        (hasHighlightedIssue || modalIssueId) && (
+          <SelectPriorityModal
+            onClose={() => closeModal("updatePriority")}
+            onSelect={(priority) =>
+              updateIssue({
+                issueId: modalIssueId,
+                fields: {
+                  priority: { id: priority.value, name: priority.label },
+                },
+              })
+            }
+          />
+        )}
+      {modals.updateAssignee && (hasHighlightedIssue || modalIssueId) && (
+        <UpdateAssigneeModal issueId={modalIssueId} />
       )}
-      {modals.updateAssignee && <UpdateAssigneeModal issueId={modalIssueId} />}
-      {modals.moveIssue && (
-        <SelectLaneModal onClose={() => closeModal("moveIssue")} />
+      {modals.moveIssue && (hasHighlightedIssue || modalIssueId) && (
+        <SelectLaneModal
+          issueId={modalIssueId}
+          onClose={() => closeModal("moveIssue")}
+        />
       )}
     </>
   );
