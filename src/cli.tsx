@@ -9,8 +9,9 @@ unlink(LOGFILE, (error) => {
     console.error(error);
   }
 });
+
 const ink = withFullScreen(<App />);
 ink.start();
 await ink.waitUntilExit();
-console.log("jira time is over :(");
+
 process.exit(0); // Not sure why it doen't quit on it's own, but we'll help it out
