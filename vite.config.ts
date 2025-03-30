@@ -1,5 +1,4 @@
 import { builtinModules } from "node:module";
-import react from "@vitejs/plugin-react";
 import { type Plugin, defineConfig } from "vite";
 
 /**
@@ -20,24 +19,22 @@ const chalkForceFullColors: Plugin = {
 };
 
 export default defineConfig({
-  plugins: [react(), chalkForceFullColors],
+  clearScreen: false,
+  plugins: [chalkForceFullColors],
   appType: "custom",
   esbuild: {
-    target: "node22", // Target Node.js 22 (or your version)
+    target: "node22",
   },
   build: {
-    target: "node22", // Set target to Node.js 22
-    minify: false, // Disable minification to avoid mangling
+    target: "node22",
     lib: {
       fileName: "cli",
-      name: "cli", // Name of the library
-      entry: "./src/cli.tsx", // Entry point for the app
+      name: "cli",
+      entry: "./src/cli.tsx",
       formats: ["es"],
     },
     rollupOptions: {
-      external: [
-        ...builtinModules.flatMap((module) => [module, `node:${module}`]), // Externalize built-in Node.js modules
-      ],
+      external: builtinModules.flatMap((module) => [module, `node:${module}`]), // Externalize built-in Node.js modules
     },
   },
   ssr: {
@@ -51,8 +48,10 @@ export default defineConfig({
       platform: "node",
     },
   },
-  // define: {
-  //   "process.env.FORCE_COLOR": "1", // ✅ Force color support at build time
-  //   "process.env.COLORTERM": "truecolor", // Ensure full color support
-  // },
+  server: {
+    watch: {
+      ignored: [/.*\.txt/],
+      cwd: "./src",
+    },
+  },
 });

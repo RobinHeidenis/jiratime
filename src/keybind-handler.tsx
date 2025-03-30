@@ -13,6 +13,11 @@ export const GlobalKeybindHandler = () => {
 
   useInput(
     (input, key) => {
+      // Crude attempt to force exit the app if we have refreshed
+      if (input === "c" && key.ctrl) {
+        process.exit();
+      }
+
       for (const keybind of keybinds) {
         if (keybind.when && !keybind.when()) {
           continue;
