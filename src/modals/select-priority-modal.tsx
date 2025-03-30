@@ -36,7 +36,7 @@ export const SelectPriorityModal = ({
         value: priority.id,
         color: priority.statusColor,
       }))}
-      title={"Select priority"}
+      title={`Select priority (${issue.key})`}
       selected={issue.fields.priority.id}
       onSelect={(choice: Option) => {
         if (choice.value !== issue.fields.priority.id) {

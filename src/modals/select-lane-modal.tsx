@@ -1,11 +1,10 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { Text } from "ink";
 import { useAtomValue } from "jotai";
 import { useBoardQuery } from "../api/get-board.query.js";
 import { useGetIssueTransitionsQuery } from "../api/get-issue-transitions.query.js";
-import type { Issue } from "../api/get-issues.query.js";
 import { useTransitionIssueMutation } from "../api/transition-issue.mutation.js";
 import { highlightedIssueAtom } from "../atoms/highlighted-issue.atom.js";
+import { useIssue } from "../hooks/use-issue.js";
 import type { Option } from "./select-modal.js";
 import { SelectModal } from "./select-modal.js";
 
@@ -17,12 +16,10 @@ export const SelectLaneModal = ({
   issueId?: string | null;
 }) => {
   const { mutate: transitionIssue } = useTransitionIssueMutation();
-  const issueId = issueIdOverride ?? useAtomValue(highlightedIssueAtom).id;
-  const queryClient = useQueryClient();
-  const issues = queryClient.getQueryData(["issues"]) as Issue[];
   const { data: board } = useBoardQuery();
-
-  const issue = issues.find((issue) => issue.id === issueId)!;
+  const issue = useIssue(
+    issueIdOverride ?? useAtomValue(highlightedIssueAtom).id,
+  );
 
   const { data: transitions } = useGetIssueTransitionsQuery(
     issue?.id!,
@@ -61,7 +58,7 @@ export const SelectLaneModal = ({
           newStatusId: transition.to.id,
         },
       }))}
-      title={"Select lane"}
+      title={`Select lane (${issue.key})`}
       selected={selectedTransition!.id}
       onSelect={(choice: Option) => {
         if (choice.value !== selectedTransition!.id) {
