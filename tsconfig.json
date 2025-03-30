@@ -2,7 +2,6 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "moduleResolution": "NodeNext",
     "target": "esnext",
     "allowJs": true,
     "resolveJsonModule": true,
@@ -17,7 +16,7 @@
     "outDir": "dist",
     "module": "nodeNext",
 
-    "lib": ["DOM", "DOM.Iterable", "ES2024"],
+    "lib": ["DOM", "DOM.Iterable", "esnext"],
     "jsx": "react-jsx"
   },
   "include": ["src"]

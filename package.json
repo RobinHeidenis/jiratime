@@ -10,8 +10,7 @@
   "scripts": {
     "build": "tsc --noEmit && vite build",
     "start": "FORCE_HYPERLINK=true node dist/cli.js",
-    "dev": "vite",
-    "experimental_dev": "SWCRC=true node --import @swc-node/register/esm-register --watch src/cli.tsx",
+    "dev": "node dev.js",
     "lint": "biome check"
   },
   "dependencies": {
