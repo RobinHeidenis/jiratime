@@ -3,11 +3,19 @@ import type { Configuration } from "../../env.js";
 import { CONFIG_LOCATION } from "../../lib/constants.js";
 import { makeLogger } from "../../lib/log.js";
 
+export const CUSTOM_FIELDS = {
+  storyPoints: "Story points",
+  developer: "Developer",
+} as const;
+
+export type CustomFields = typeof CUSTOM_FIELDS;
+
 export type OnboardingData = {
   jiraUrl: URL;
   apiToken: string;
   boardId: string;
   profile: JiraProfile;
+  customFields: { [K in keyof CustomFields]: string | null };
 };
 
 const logger = makeLogger("FinishOnboarding");
@@ -28,9 +36,9 @@ async function writeConfig(data: OnboardingData): Promise<boolean> {
     JIRA_BOARD_ID: data.boardId,
     JIRA_ACCOUNT_ID: data.profile.accountId,
     JIRA_ACCOUNT_NAME: data.profile.displayName,
-    // TODO: Story points and board jql
-    STORY_POINTS_FIELD: "",
-    DEVELOPER_FIELD: "",
+    STORY_POINTS_FIELD: data.customFields.storyPoints ?? "",
+    DEVELOPER_FIELD: data.customFields.developer ?? "",
+    // TODO: board jql?
     boards: {
       [data.boardId]: {
         jqlPrefix: "",

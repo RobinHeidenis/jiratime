@@ -9,6 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Box, Text, useFocusManager, useInput } from "ink";
 import { useEffect, useState } from "react";
 import { useBoardsQuery } from "../../api/get-boards.query.js";
+import { useCustomFieldsQuery } from "../../api/get-custom-fields.query.js";
 import { type JiraProfile, useMeQuery } from "../../api/get-me.query.js";
 import type { ApiRequester } from "../../api/request.js";
 import { Focusable } from "../../components/focusable.js";
@@ -16,7 +17,13 @@ import { env } from "../../env.js";
 import { useRequester } from "../../hooks/use-requester.js";
 import { APP_NAME } from "../../lib/constants.js";
 import { asNonNullable } from "../../lib/utils/as-non-nullable.js";
-import { type OnboardingData, finishOnboarding } from "./finish-onboarding.js";
+import {
+  CUSTOM_FIELDS,
+  type CustomFields,
+  type OnboardingData,
+  finishOnboarding,
+} from "./finish-onboarding.js";
+import { SelectCustomField } from "./select-custom-field.js";
 
 const OnboardingStep = {
   Welcome: "Welcome",
@@ -24,6 +31,7 @@ const OnboardingStep = {
   Credentials: "Credentials",
   ConfirmCredentials: "ConfirmCredentials",
   BoardSelection: "BoardSelection",
+  CustomFieldSelection: "CustomFieldSelection",
   Finish: "Finish",
 } as const;
 
@@ -35,29 +43,50 @@ const ifDev = (key: keyof typeof env) => {
   }
 };
 
+const useStepper = () => {
+  const [stepIndex, setStepIndex] = useState(0);
+
+  const STEPS = Object.values(OnboardingStep);
+
+  const next = () => {
+    if (stepIndex < STEPS.length - 1) {
+      setStepIndex((prev) => prev + 1);
+    }
+  };
+
+  const prev = () => {
+    if (stepIndex > 0) {
+      setStepIndex((prev) => prev - 1);
+    }
+  };
+
+  const step = STEPS[stepIndex]!;
+
+  return { step, next, prev };
+};
+
 export const Onboarding = () => {
   const [form, setForm] = useState({
     jiraUrl: ifDev("JIRA_BASE_URL") as URL | null,
     base64Token: ifDev("JIRA_API_KEY") as string,
     boardId: ifDev("JIRA_BOARD_ID") as string,
+    customFields: {} as { [K in keyof CustomFields]: string | null },
   });
 
   const [profile, setProfile] = useState<JiraProfile | null>(null);
 
   const requester = useRequester(form.jiraUrl, form.base64Token);
 
-  const [step, setStep] = useState<OnboardingStep>(OnboardingStep.Welcome);
+  const { step, next, prev } = useStepper();
 
   const Step = {
-    [OnboardingStep.Welcome]: () => (
-      <WelcomeStep onNext={() => setStep(OnboardingStep.JiraUrl)} />
-    ),
+    [OnboardingStep.Welcome]: () => <WelcomeStep onNext={next} />,
     [OnboardingStep.JiraUrl]: () => (
       <JiraUrlStep
         initialValue={form.jiraUrl}
         onSubmit={(jiraUrl) => {
           setForm((prev) => ({ ...prev, jiraUrl }));
-          setStep(OnboardingStep.Credentials);
+          next();
         }}
       />
     ),
@@ -79,7 +108,7 @@ export const Onboarding = () => {
 
             setForm((prev) => ({ ...prev, email, base64Token }));
 
-            setStep(OnboardingStep.ConfirmCredentials);
+            next();
           }}
         />
       );
@@ -90,9 +119,9 @@ export const Onboarding = () => {
         onConfirm={(profile) => {
           setProfile(profile);
 
-          setStep(OnboardingStep.BoardSelection);
+          next();
         }}
-        onCancel={() => setStep(OnboardingStep.Credentials)}
+        onCancel={prev}
       />
     ),
     [OnboardingStep.BoardSelection]: () => (
@@ -101,7 +130,21 @@ export const Onboarding = () => {
         onSubmit={(boardId) => {
           setForm((prev) => ({ ...prev, boardId }));
 
-          setStep(OnboardingStep.Finish);
+          next();
+        }}
+      />
+    ),
+    [OnboardingStep.CustomFieldSelection]: () => (
+      <CustomFieldSelectionStep<CustomFields>
+        request={requester!}
+        fieldNames={CUSTOM_FIELDS}
+        onSubmit={(customFields) => {
+          setForm((prev) => ({
+            ...prev,
+            customFields,
+          }));
+
+          next();
         }}
       />
     ),
@@ -112,6 +155,7 @@ export const Onboarding = () => {
           apiToken: form.base64Token,
           boardId: form.boardId,
           profile,
+          customFields: form.customFields,
         })}
       />
     ),
@@ -332,6 +376,36 @@ const BoardSelectionStep = ({
             value: board.id,
           }))}
         />
+      )}
+    </Box>
+  );
+};
+
+const CustomFieldSelectionStep = <T extends Record<string, string | null>>({
+  request,
+  onSubmit,
+  fieldNames,
+}: {
+  request: ApiRequester;
+  fieldNames: { [K in keyof T]: string };
+  onSubmit: (customFields: T) => void;
+}) => {
+  const { isLoading, data: fields } = useCustomFieldsQuery(request);
+
+  return (
+    <Box flexGrow={1} flexDirection="column" gap={2}>
+      {isLoading && <Spinner label="Fetching custom fields..." />}
+
+      {fields && (
+        <Box flexDirection="column" gap={1}>
+          <SelectCustomField
+            fieldsToConfigure={Object.entries(fieldNames).map(
+              ([value, label]) => ({ value, label }),
+            )}
+            customFields={fields}
+            onSelect={(fields) => onSubmit(fields as T)}
+          />
+        </Box>
       )}
     </Box>
   );
