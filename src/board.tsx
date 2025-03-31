@@ -11,7 +11,6 @@ import { scrollOffsetAtom } from "./atoms/scroll-offset.atom.js";
 import { viewedIssueAtom } from "./atoms/viewed-issue.atom.js";
 import { Column } from "./column.js";
 import { log } from "./lib/log.js";
-import type { JiraUser } from "./types/jira-user.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
 export const groupIssuesByColumn = (
@@ -61,13 +60,13 @@ const getColumn = (
 export const Board = ({
   boardConfiguration,
   issues,
-  filteredUsers,
+  heading,
   ignoreInput = false,
   preselectFirstIssue = false,
 }: {
   boardConfiguration: z.infer<typeof boardWithFilter>;
   issues: Issue[];
-  filteredUsers: readonly JiraUser[];
+  heading: string;
   ignoreInput: boolean;
   preselectFirstIssue?: boolean;
 }) => {
@@ -80,19 +79,13 @@ export const Board = ({
 
   const columns = boardConfiguration.columnConfig.columns.map((c) => c.name);
 
-  const filteredIssues = issues.filter((issue) =>
-    filteredUsers.some(
-      (user) => user.accountId === issue.fields.assignee.accountId,
-    ),
-  );
-
   // biome-ignore lint/correctness/useExhaustiveDependencies: only want to run this effect when preselectFirstIssue changes
   useEffect(() => {
     if (!preselectFirstIssue) {
       return;
     }
 
-    const firstIssue = filteredIssues[0];
+    const [firstIssue] = issues;
     if (!firstIssue) {
       return;
     }
@@ -129,7 +122,7 @@ export const Board = ({
   }, [preselectFirstIssue]);
 
   const groupedIssues = groupIssuesByColumn(
-    filteredIssues,
+    issues,
     boardConfiguration.columnConfig.columns,
   );
   const maxIssueCount = groupedIssues
@@ -273,11 +266,7 @@ export const Board = ({
 
   return (
     <Box flexDirection="column" width={width - 2}>
-      <Text>
-        {" "}
-        Selected users:{" "}
-        {filteredUsers.map((user) => user.displayName.split(" ")[0]).join(", ")}
-      </Text>
+      <Text> {heading}</Text>
       <Box width={"100%"} overflow="hidden">
         <Box gap={1} width={"100%"} marginLeft={-scrollOffset.left}>
           {columns?.map((name, index) => {
