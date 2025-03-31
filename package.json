@@ -1,6 +1,5 @@
 {
   "name": "jira-tui",
-  "private": true,
   "version": "1.0.0",
   "description": "",
   "author": "Robin Heidenis <robin.heidenis@gmail.com>",
@@ -11,7 +10,7 @@
   "scripts": {
     "dev": "NODE_ENV=development FORCE_HYPERLINK=true bun --watch run src/cli.tsx",
     "build": "tsc --noEmit && bun run bundle",
-    "bundle": "bun build ./src/cli.tsx --compile --outfile ./build/jira-tui",
+    "bundle": "bun build ./src/cli.tsx --compile --minify --outfile ./build/jira-tui",
     "lint": "biome check"
   },
   "dependencies": {
