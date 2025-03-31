@@ -1,32 +1,36 @@
-import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import path from "node:path";
 import { z } from "zod";
+import { CONFIG_LOCATION } from "./lib/constants.js";
 
-const CONFIG_LOCATION = path.join(homedir(), ".config", "jira-tui.json");
+const configFile = await Bun.file(CONFIG_LOCATION)
+  .json()
+  .catch(async () => {
+    const defaultConfig = { onboarded: false };
+    await Bun.write(CONFIG_LOCATION, JSON.stringify(defaultConfig, null, 2));
 
-let configFileConfig: object | undefined;
-try {
-  const configFile = readFileSync(CONFIG_LOCATION, "utf-8");
-  configFileConfig = JSON.parse(configFile);
-} catch {
-  console.error("❌ Missing or invalid config file");
-}
+    return defaultConfig;
+  });
 
 const envVariables = z.object({
   JIRA_API_KEY: z.string(),
-  JIRA_BASE_URL: z.string().url(),
+  JIRA_BASE_URL: z
+    .string()
+    .url()
+    .transform((v) => new URL(v)),
   JIRA_BOARD_ID: z.string().or(z.number()),
   JIRA_ACCOUNT_ID: z.string().optional(),
+  JIRA_ACCOUNT_NAME: z.string().optional(),
   STORY_POINTS_FIELD: z.string(),
   DEVELOPER_FIELD: z.string().optional(),
   boards: z.record(z.object({ jqlPrefix: z.string() })).optional(),
+  onboarded: z.boolean(),
 });
 
-const mergedConfig = { ...configFileConfig, ...process.env };
+export type Configuration = z.infer<typeof envVariables>;
+
+const mergedConfig = { ...configFile, ...process.env };
 const result = envVariables.safeParse(mergedConfig);
 
-if (!result.success) {
+if (!result.success && configFile.onboarded) {
   console.error("❌ Missing or invalid environment variables:");
   for (const [key, value] of Object.entries(
     result.error.flatten().fieldErrors,
@@ -39,4 +43,4 @@ if (!result.success) {
   process.exit(1);
 }
 
-export const env = result.data;
+export const env = (result.data ?? {}) as Configuration;

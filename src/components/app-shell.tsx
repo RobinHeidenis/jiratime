@@ -16,9 +16,7 @@ export const AppShell = ({ routes }: { routes: readonly Route[] }) => {
         borderStyle="round"
         flexDirection="column"
       >
-        <Box flexGrow={1} height="100%">
-          <Router routes={routes} />
-        </Box>
+        <Router routes={routes} />
         {ui.showKeybinds && <KeybindsDisplay />}
       </Box>
     </Box>
