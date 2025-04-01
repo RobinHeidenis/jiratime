@@ -55,7 +55,7 @@ export const makeRequester = (jiraUrl: URL, apiToken: string) => {
 };
 
 const noopRequester: ApiRequester = async () => {
-  logger.trace("No requester available");
+  logger.debug("No requester available");
   throw new Error("No requester available");
 };
 
