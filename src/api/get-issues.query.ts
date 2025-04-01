@@ -118,7 +118,9 @@ const fetchIssues = async (jql: string) => {
       searchParams.append("nextPageToken", nextPageToken);
     }
 
-    const response = await request(`/api/3/search?${searchParams.toString()}`);
+    const response = await request(
+      `/api/3/search/jql?${searchParams.toString()}`,
+    );
 
     try {
       const parsed = issueSchema.parse(response);
