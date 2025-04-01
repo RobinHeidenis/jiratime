@@ -10,7 +10,7 @@ import { inputDisabledAtom } from "./atoms/modals.atom.js";
 import { scrollOffsetAtom } from "./atoms/scroll-offset.atom.js";
 import { viewedIssueAtom } from "./atoms/viewed-issue.atom.js";
 import { Column } from "./column.js";
-import { log } from "./lib/log.js";
+import { log } from "./lib/logger.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
 
 export const groupIssuesByColumn = (

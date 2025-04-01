@@ -6,7 +6,7 @@ import type {
   PersistedClient,
   Persister,
 } from "@tanstack/react-query-persist-client";
-import { makeLogger } from "./log.js";
+import { makeLogger } from "./logger.js";
 import { throttleWithTrailing } from "./utils/throttle-with-trailing.js";
 
 const CACHE_LOCATION = path.join(

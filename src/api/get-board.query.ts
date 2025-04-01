@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { env } from "../env.js";
-import { log } from "../lib/log.js";
+import { log } from "../lib/logger.js";
 import { request } from "./request.js";
 
 const boardSchema = z.object({

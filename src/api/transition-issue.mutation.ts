@@ -3,7 +3,7 @@ import { highlightedIssueAtom } from "../atoms/highlighted-issue.atom.js";
 import { scrollOffsetAtom } from "../atoms/scroll-offset.atom.js";
 import { store } from "../atoms/store.js";
 import { groupIssuesByColumn } from "../board.js";
-import { log } from "../lib/log.js";
+import { log } from "../lib/logger.js";
 import type { FetchBoardResult } from "./get-board.query.js";
 import type { Issue } from "./get-issues.query.js";
 import { request } from "./request.js";

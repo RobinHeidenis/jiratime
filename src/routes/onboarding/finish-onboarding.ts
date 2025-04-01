@@ -1,7 +1,7 @@
 import type { JiraProfile } from "../../api/get-me.query.js";
 import type { Configuration } from "../../env.js";
 import { CONFIG_LOCATION } from "../../lib/constants.js";
-import { makeLogger } from "../../lib/log.js";
+import { makeLogger } from "../../lib/logger.js";
 
 export const CUSTOM_FIELDS = {
   storyPoints: "Story points",

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { log } from "../lib/log.js";
+import { log } from "../lib/logger.js";
 import type { Issue } from "./get-issues.query.js";
 import { request } from "./request.js";
 

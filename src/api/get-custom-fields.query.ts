@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { log } from "../lib/log.js";
+import { log } from "../lib/logger.js";
 import type { ApiRequester } from "./request.js";
 
 const field = z.object({

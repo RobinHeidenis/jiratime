@@ -1,5 +1,5 @@
 import { env } from "../env.js";
-import { log } from "../lib/log.js";
+import { log } from "../lib/logger.js";
 
 export const HOUR = 1000 * 60 * 60;
 

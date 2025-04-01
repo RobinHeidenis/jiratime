@@ -1,7 +1,7 @@
 import { unlink } from "node:fs";
 import { withFullScreen } from "fullscreen-ink";
 import { App } from "./app.js";
-import { LOGFILE } from "./lib/log.js";
+import { LOGFILE } from "./lib/logger.js";
 
 unlink(LOGFILE, (error) => {
   if (error) {
