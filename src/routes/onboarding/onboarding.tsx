@@ -360,9 +360,9 @@ const BoardSelectionStep = ({
     <Box flexGrow={1} flexDirection="column" gap={2}>
       <Text>Select a board</Text>
 
-      {isLoading || !boards?.length ? (
+      {isLoading || !boards ? (
         <Spinner />
-      ) : (
+      ) : boards.length ? (
         <Select
           onChange={(boardId) => onSubmit(boardId)}
           options={boards.map((board) => ({
@@ -370,6 +370,8 @@ const BoardSelectionStep = ({
             value: board.id,
           }))}
         />
+      ) : (
+        <Text color="red">No boards found</Text>
       )}
     </Box>
   );
