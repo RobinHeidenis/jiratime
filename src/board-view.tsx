@@ -25,8 +25,8 @@ import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
 import { useKeybinds } from "./hooks/use-keybinds.js";
 import { CONFIRM_KEY } from "./lib/keybinds/keys.js";
-import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
+import { SelectLinkedResourcesModal } from "./modals/select-linked-resources.modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
 import { SelectUsersModal } from "./modals/select-users-modal.js";
 import { UpdateAssigneeModal } from "./modals/update-assignee.modal.js";
@@ -194,13 +194,7 @@ export const BoardView = () => {
         key: "o",
         name: "Open",
         handler: () => {
-          const selectedIssue = store.get(highlightedIssueAtom);
-
-          if (!selectedIssue?.key) {
-            return;
-          }
-
-          openIssueInBrowser(selectedIssue.key);
+          openModal("linkedResources");
         },
       });
 
@@ -285,6 +279,12 @@ export const BoardView = () => {
         <SelectLaneModal
           issueId={modalIssueId}
           onClose={() => closeModal("moveIssue")}
+        />
+      )}
+      {modals.linkedResources && (hasHighlightedIssue || modalIssueId) && (
+        <SelectLinkedResourcesModal
+          issueId={modalIssueId}
+          onClose={() => closeModal("linkedResources")}
         />
       )}
     </>

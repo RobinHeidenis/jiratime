@@ -6,6 +6,7 @@ export const modalsAtom = atom({
   moveIssue: false,
   updatePriority: false,
   updateAssignee: false,
+  linkedResources: false,
 });
 
 export const inputDisabledAtom = atom((get) =>

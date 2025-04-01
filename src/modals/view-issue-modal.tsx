@@ -3,6 +3,7 @@ import { Box, Text } from "ink";
 import { atom, useStore } from "jotai";
 import { useAtomValue } from "jotai";
 import { useEffect } from "react";
+import { prefetchIssueMergeRequests } from "../api/get-issue-merge-requests.query.js";
 import { prefetchIssueTransitions } from "../api/get-issue-transitions.query.js";
 import type { Issue } from "../api/get-issues.query.js";
 import { prefetchPriorities } from "../api/get-priorities.query.js";
@@ -184,6 +185,7 @@ export const ViewIssueModal = ({
   prefetchUsers(queryClient, issue.id);
   prefetchPriorities(queryClient, issue.fields.project.id);
   prefetchIssueTransitions(queryClient, issue.id);
+  prefetchIssueMergeRequests(queryClient, issue.id);
 
   const paddedText = description.map((line) => `${line} `).join("\n");
 
