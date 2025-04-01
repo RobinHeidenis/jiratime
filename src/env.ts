@@ -4,7 +4,7 @@ import { CONFIG_LOCATION } from "./lib/constants.js";
 const configFile = await Bun.file(CONFIG_LOCATION)
   .json()
   .catch(async () => {
-    const defaultConfig = { onboarded: false };
+    const defaultConfig = { onboarded: false } satisfies Partial<Configuration>;
     await Bun.write(CONFIG_LOCATION, JSON.stringify(defaultConfig, null, 2));
 
     return defaultConfig;

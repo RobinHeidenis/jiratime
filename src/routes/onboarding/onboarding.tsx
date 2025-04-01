@@ -70,7 +70,7 @@ export const Onboarding = () => {
     jiraUrl: ifDev("JIRA_BASE_URL") as URL | null,
     base64Token: ifDev("JIRA_API_KEY") as string,
     boardId: ifDev("JIRA_BOARD_ID") as string,
-    customFields: {} as { [K in keyof CustomFields]: string | null },
+    customFields: {} as Record<keyof CustomFields, string | null>,
   });
 
   const [profile, setProfile] = useState<JiraProfile | null>(null);
@@ -169,30 +169,26 @@ export const Onboarding = () => {
       height="100%"
       flexDirection="column"
     >
-      <Box height="auto" width="50%">
-        <Box
-          flexDirection="column"
-          justifyContent="center"
-          alignItems="center"
-          borderColor="blue"
-          borderStyle="round"
-          padding={1}
-          gap={2}
-        >
-          {step !== OnboardingStep.Finish && <Text>Welcome to {APP_NAME}</Text>}
+      <Box
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        borderColor="blue"
+        borderStyle="round"
+        padding={1}
+        gap={2}
+      >
+        {step !== OnboardingStep.Finish && <Text>Welcome to {APP_NAME}</Text>}
 
-          <Box minWidth="25%" justifyContent="center">
-            <Step />
-          </Box>
-        </Box>
+        <Step />
       </Box>
     </Box>
   );
 };
 
 const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
-  useInput((input) => {
-    if (input === " ") {
+  useInput((_input, key) => {
+    if (key.return) {
       onNext();
     }
   });
@@ -205,7 +201,7 @@ const WelcomeStep = ({ onNext }: { onNext: () => void }) => {
       </Text>
 
       <Box justifyContent="center">
-        <Text color="blue">Press {"<space>"} to continue</Text>
+        <Text color="blue">Press {"<return>"} to continue</Text>
       </Box>
     </Box>
   );
@@ -230,14 +226,12 @@ const JiraUrlStep = ({
 
             let parsedUrl: URL;
             try {
-              parsedUrl = new URL(url);
+              parsedUrl = new URL(
+                url.startsWith("https://") ? url : `https://${url}`,
+              );
             } catch {
-              try {
-                parsedUrl = new URL(`https://${url}`);
-              } catch {
-                setInvalidUrl(true);
-                return;
-              }
+              setInvalidUrl(true);
+              return;
             }
 
             onSubmit(parsedUrl);
@@ -387,7 +381,7 @@ const CustomFieldSelectionStep = <T extends Record<string, string | null>>({
   fieldNames,
 }: {
   request: ApiRequester;
-  fieldNames: { [K in keyof T]: string };
+  fieldNames: Record<keyof T, string>;
   onSubmit: (customFields: T) => void;
 }) => {
   const { isLoading, data: fields } = useCustomFieldsQuery(request);

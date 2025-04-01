@@ -43,7 +43,7 @@ export const SelectCustomField = ({
 
   return (
     <Box flexDirection="column" height={20} gap={1}>
-      <Text>What field holds "{activeField.label}"?</Text>
+      <Text>What custom field should be used for "{activeField.label}"?</Text>
 
       <SelectWithSearch
         key={activeField.value}

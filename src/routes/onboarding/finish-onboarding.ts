@@ -15,7 +15,7 @@ export type OnboardingData = {
   apiToken: string;
   boardId: string;
   profile: JiraProfile;
-  customFields: { [K in keyof CustomFields]: string | null };
+  customFields: Record<keyof CustomFields, string | null>;
 };
 
 const logger = makeLogger("FinishOnboarding");
@@ -38,12 +38,6 @@ async function writeConfig(data: OnboardingData): Promise<boolean> {
     JIRA_ACCOUNT_NAME: data.profile.displayName,
     STORY_POINTS_FIELD: data.customFields.storyPoints ?? "",
     DEVELOPER_FIELD: data.customFields.developer ?? "",
-    // TODO: board jql?
-    boards: {
-      [data.boardId]: {
-        jqlPrefix: "",
-      },
-    },
     onboarded: true,
   } satisfies Configuration;
   try {

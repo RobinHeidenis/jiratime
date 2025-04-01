@@ -3,16 +3,19 @@ import { z } from "zod";
 import { log } from "../lib/log.js";
 import type { ApiRequester } from "./request.js";
 
+const zStringOrNumber = z
+  .string()
+  .or(z.number())
+  .transform((v) => String(v));
+
 const board = z
   .object({
-    id: z
-      .string()
-      .or(z.number())
-      .transform((v) => String(v)),
+    id: zStringOrNumber,
     name: z.string(),
     type: z.string(),
     location: z
       .object({
+        projectId: zStringOrNumber,
         projectName: z.string(),
       })
       .optional(),
