@@ -105,8 +105,21 @@ const fetchIssues = async (jql: string) => {
   let allIssues: Issue[] = [];
 
   do {
+    const boardJql = env.boards?.[Number(env.JIRA_BOARD_ID)]?.jqlPrefix;
+
+    const searchParams = new URLSearchParams();
+
+    const resultingJql = boardJql ? `${boardJql} ${jql}` : jql;
+    searchParams.append("jql", resultingJql);
+
+    searchParams.append("fields", fields.join(","));
+    searchParams.append("maxResults", "200");
+    if (nextPageToken) {
+      searchParams.append("nextPageToken", nextPageToken);
+    }
+
     const response = await request(
-      `/api/3/search/jql?jql=${env.boards?.[Number(env.JIRA_BOARD_ID)]?.jqlPrefix} ${jql}&fields=${fields.join(",")}&maxResults=200${nextPageToken ? `&nextPageToken=${nextPageToken}` : ""}`,
+      `/api/3/search/jql?${searchParams.toString()}`,
     );
 
     try {
@@ -118,6 +131,7 @@ const fetchIssues = async (jql: string) => {
       throw error;
     }
   } while (nextPageToken);
+
   return allIssues;
 };
 
