@@ -6,7 +6,7 @@ import {
   TextInput,
 } from "@inkjs/ui";
 import { useMutation } from "@tanstack/react-query";
-import { Box, Text, useFocusManager, useInput } from "ink";
+import { Box, Text, useApp, useFocusManager, useInput } from "ink";
 import { useEffect, useState } from "react";
 import { useBoardsQuery } from "../../api/get-boards.query.js";
 import { useCustomFieldsQuery } from "../../api/get-custom-fields.query.js";
@@ -410,10 +410,18 @@ const FinishStep = ({ data }: { data: OnboardingData }) => {
     mutationFn: async () => await finishOnboarding(data),
   });
 
+  const app = useApp();
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once
   useEffect(() => {
     mutation.mutate();
   }, []);
+
+  useInput((_input, key) => {
+    if (key.return) {
+      app.exit();
+    }
+  });
 
   return (
     <Box flexGrow={1} flexDirection="column" gap={2}>
@@ -424,9 +432,15 @@ const FinishStep = ({ data }: { data: OnboardingData }) => {
       )}
 
       {mutation.isSuccess && (
-        <Text color="green">
-          Onboarding complete! Restart the app to start using {APP_NAME}.
-        </Text>
+        <Box flexDirection="column" gap={1}>
+          <Text color="green">
+            Onboarding complete! Restart the app to start using {APP_NAME}.
+          </Text>
+
+          <Box justifyContent="center">
+            <Text color="blueBright">Press {"<return>"} to exit</Text>
+          </Box>
+        </Box>
       )}
     </Box>
   );
