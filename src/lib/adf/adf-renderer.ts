@@ -248,7 +248,7 @@ export class ADFRenderer {
 
     return chalk.underline.blue(
       terminalLink(
-        url.includes(env.JIRA_BASE_URL)
+        url.includes(env.JIRA_BASE_URL.toString())
           ? url.split("/").at(-1)!
           : new URL(url).hostname.replace("www.", ""),
         url,
