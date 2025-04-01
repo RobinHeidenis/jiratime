@@ -1,5 +1,5 @@
 import { Select, TextInput } from "@inkjs/ui";
-import { Box, Text, useInput } from "ink";
+import { Box, Text } from "ink";
 import { useState } from "react";
 
 export const SelectWithSearch = ({
@@ -13,15 +13,14 @@ export const SelectWithSearch = ({
 }) => {
   const [search, setSearch] = useState("");
 
-  const optionsBySearch = options.filter((option) =>
-    option.label.toLowerCase().includes(search.toLowerCase()),
+  const optionsBySearch = options.filter(
+    (option) =>
+      !search || option.label.toLowerCase().includes(search.toLowerCase()),
   );
 
-  useInput((_input, key) => {
-    if (key.escape && skippable) {
-      onSelect(null);
-    }
-  });
+  if (skippable) {
+    optionsBySearch.unshift({ value: "<skip>", label: "<skip>" });
+  }
 
   return (
     <Box flexDirection="column" paddingLeft={2} gap={1}>
@@ -30,17 +29,13 @@ export const SelectWithSearch = ({
         <TextInput onChange={setSearch} />
       </Box>
 
-      <Box flexDirection="column" gap={1}>
-        <Text>{"Select an option"}</Text>
-        <Select
-          options={optionsBySearch}
-          onChange={(value) => {
-            onSelect(value);
-          }}
-        />
-      </Box>
-
-      {skippable && <Text color="blueBright">{"Press <esc> to skip"}</Text>}
+      <Select
+        options={optionsBySearch}
+        visibleOptionCount={20}
+        onChange={(value) => {
+          onSelect(value === "<skip>" ? null : value);
+        }}
+      />
     </Box>
   );
 };

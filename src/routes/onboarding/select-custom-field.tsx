@@ -53,6 +53,12 @@ export const SelectCustomField = ({
           label: field.name,
         }))}
         onSelect={(fieldId) => {
+          if (fieldId === null) {
+            setResult({ ...result, [activeField.value]: null });
+            nextField();
+            return;
+          }
+
           const field = customFields.find((f) => f.id === fieldId);
 
           if (!field) {
