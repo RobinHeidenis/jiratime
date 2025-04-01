@@ -1,12 +1,14 @@
+import { ThemeProvider, defaultTheme, extendTheme } from "@inkjs/ui";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { Box, Text } from "ink";
+import type { TextProps } from "ink";
 import { Provider as JotaiProvider } from "jotai";
 import { store } from "./atoms/store.js";
-import { BoardView } from "./board-view.js";
+import { AppShell } from "./components/app-shell.js";
+import { env } from "./env.js";
 import { GlobalKeybindHandler } from "./keybind-handler.js";
-import { KeybindsDisplay } from "./keybinds-display.js";
 import { createFilePersister } from "./lib/query-storage-persister.js";
+import { ROUTES } from "./routes/routes.js";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +20,26 @@ const queryClient = new QueryClient({
 
 const persister = createFilePersister();
 
+// Prevent weird cache issues when onboarding
+if (!env.onboarded) {
+  await persister.removeClient();
+}
+
+const customTheme = extendTheme(defaultTheme, {
+  components: {
+    ConfirmInput: {
+      styles: {
+        input: ({ isDisabled }): TextProps => ({
+          ...defaultTheme.components.ConfirmInput?.styles?.input?.({
+            isDisabled,
+          }),
+          color: isDisabled ? "gray" : "blueBright",
+        }),
+      },
+    },
+  },
+});
+
 export const App = () => {
   return (
     <JotaiProvider store={store}>
@@ -26,18 +48,10 @@ export const App = () => {
         persistOptions={{ persister }}
       >
         <GlobalKeybindHandler />
-        <Box flexDirection="column" width={"100%"} height={"100%"}>
-          <Text> JIRA TIME</Text>
-          <Box
-            height={"100%"}
-            width={"100%"}
-            borderStyle={"round"}
-            flexDirection="column"
-          >
-            <BoardView />
-            <KeybindsDisplay />
-          </Box>
-        </Box>
+
+        <ThemeProvider theme={customTheme}>
+          <AppShell routes={ROUTES} />
+        </ThemeProvider>
       </PersistQueryClientProvider>
     </JotaiProvider>
   );

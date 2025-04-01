@@ -8,9 +8,9 @@
   "files": ["dist"],
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "start": "FORCE_HYPERLINK=true node dist/cli.js",
-    "dev": "tsc --watch",
+    "dev": "NODE_ENV=development FORCE_HYPERLINK=true bun --watch run src/cli.tsx",
+    "build": "tsc --noEmit && bun run bundle",
+    "bundle": "bun build ./src/cli.tsx --compile --minify --outfile ./build/jira-tui",
     "lint": "biome check"
   },
   "dependencies": {
@@ -30,11 +30,11 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@types/bun": "latest",
     "@types/marked-terminal": "^6.1.1",
     "@types/node": "^22.13.1",
     "@types/react": "^18.3.18",
     "lefthook": "^1.11.0",
     "typescript": "^5.7.3"
-  },
-  "packageManager": "pnpm@10.5.2+sha512.da9dc28cd3ff40d0592188235ab25d3202add8a207afbedc682220e4a0029ffbff4562102b9e6e46b4e3f9e8bd53e6d05de48544b0c57d4b0179e22c76d1199b"
+  }
 }

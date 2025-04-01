@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { unlink } from "node:fs";
 import { withFullScreen } from "fullscreen-ink";
 import { App } from "./app.js";

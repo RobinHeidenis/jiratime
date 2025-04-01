@@ -1,7 +1,7 @@
 import { Spinner } from "@inkjs/ui";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { Box, Text } from "ink";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
 import { useBoardQuery } from "./api/get-board.query.js";
 import { useIssueQuery } from "./api/get-issues.query.js";
@@ -34,6 +34,7 @@ import { ViewIssueModal } from "./modals/view-issue-modal.js";
 import type { JiraUser } from "./types/jira-user.js";
 
 const myAccountId = env.JIRA_ACCOUNT_ID;
+const byMeFilterAtom = atom(false);
 
 export const BoardView = () => {
   const { data: board } = useBoardQuery();
@@ -47,6 +48,7 @@ export const BoardView = () => {
   const [boardSearch, setBoardSearch] = useAtom(boardSearchAtom);
   const resetBoardSearch = useSetAtom(resetBoardSearchAtom);
   const hasHighlightedIssue = !!useAtomValue(highlightedIssueAtom).id;
+  const developedByMeFilter = useAtomValue(byMeFilterAtom);
 
   const [searchState, setSearchState] = useAtom(boardSearchStateAtom);
   const [modalIssueId, setModalIssueId] = useState<string | null>(null);
@@ -74,18 +76,44 @@ export const BoardView = () => {
 
   const allUsers = Array.from(usersById.values());
 
-  const filteredIssuesBySearch = useMemo(() => {
-    if (!issues?.length || !boardSearch) {
-      return issues ?? [];
+  const filteredIssues = useMemo(() => {
+    let results = issues ?? [];
+
+    if (developedByMeFilter) {
+      results = results.filter(
+        (issue) => issue.fields.developer?.accountId === myAccountId,
+      );
+    } else if (filteredUsers.length) {
+      results = results.filter((issue) =>
+        filteredUsers.some(
+          (user) => user.accountId === issue.fields.assignee.accountId,
+        ),
+      );
     }
 
-    const needle = boardSearch.toLowerCase();
-    return issues.filter(
-      (issue) =>
-        issue.key.toLowerCase().includes(needle) ||
-        issue.fields.summary.toLowerCase().includes(needle),
-    );
-  }, [issues, boardSearch]);
+    if (boardSearch) {
+      const needle = boardSearch.toLowerCase();
+      results = results.filter(
+        (issue) =>
+          issue.key.toLowerCase().includes(needle) ||
+          issue.fields.summary.toLowerCase().includes(needle),
+      );
+    }
+
+    return results;
+  }, [issues, boardSearch, filteredUsers, developedByMeFilter]);
+
+  const header = useMemo(() => {
+    if (developedByMeFilter) {
+      return "Filter: Issues developed by me";
+    }
+
+    const users = filteredUsers.length ? filteredUsers : allUsers;
+
+    return `Selected users: ${users
+      .map((user) => user.displayName.split(" ")[0])
+      .join(", ")}`;
+  }, [filteredUsers, allUsers, developedByMeFilter]);
 
   useKeybinds(
     { view: "BoardView" },
@@ -134,6 +162,15 @@ export const BoardView = () => {
 
               return [me];
             }),
+        });
+
+        register({
+          key: "B",
+          modifiers: ["shift"],
+          name: "By me",
+          handler: () => {
+            store.set(byMeFilterAtom, (current) => !current);
+          },
         });
       }
 
@@ -187,10 +224,10 @@ export const BoardView = () => {
       {board && issues ? (
         <Board
           boardConfiguration={board}
-          issues={filteredIssuesBySearch}
-          filteredUsers={filteredUsers.length ? filteredUsers : allUsers}
+          issues={filteredIssues}
           ignoreInput={!!selectUsersModalOpen}
           preselectFirstIssue={searchState === "result"}
+          heading={header}
         />
       ) : (
         <Spinner label="Getting data from Jira" />

@@ -49,14 +49,18 @@ export const issue = z
   .transform((data) => {
     // Get the story points value from the dynamic field
     const storyPoints = (data.fields as DynamicFields)[env.STORY_POINTS_FIELD];
-    let developer: string | null = null;
+    let developer: { displayName: string; accountId: string } | null = null;
     if (env.DEVELOPER_FIELD) {
-      developer =
-        (
-          (data.fields as DynamicFields)[env.DEVELOPER_FIELD] as {
-            displayName: string | undefined;
+      const developerData = data.fields[env.DEVELOPER_FIELD] as
+        | { displayName: string; accountId: string }
+        | undefined;
+
+      developer = developerData
+        ? {
+            accountId: developerData.accountId,
+            displayName: developerData.displayName,
           }
-        )?.displayName ?? null;
+        : null;
     }
 
     // Return a new object with all the original data plus the transformed storyPoints field
@@ -101,8 +105,21 @@ const fetchIssues = async (jql: string) => {
   let allIssues: Issue[] = [];
 
   do {
+    const boardJql = env.boards?.[Number(env.JIRA_BOARD_ID)]?.jqlPrefix;
+
+    const searchParams = new URLSearchParams();
+
+    const resultingJql = boardJql ? `${boardJql} ${jql}` : jql;
+    searchParams.append("jql", resultingJql);
+
+    searchParams.append("fields", fields.join(","));
+    searchParams.append("maxResults", "200");
+    if (nextPageToken) {
+      searchParams.append("nextPageToken", nextPageToken);
+    }
+
     const response = await request(
-      `/api/3/search/jql?jql=${env.boards?.[Number(env.JIRA_BOARD_ID)]?.jqlPrefix} ${jql}&fields=${fields.join(",")}&maxResults=200${nextPageToken ? `&nextPageToken=${nextPageToken}` : ""}`,
+      `/api/3/search/jql?${searchParams.toString()}`,
     );
 
     try {
@@ -114,6 +131,7 @@ const fetchIssues = async (jql: string) => {
       throw error;
     }
   } while (nextPageToken);
+
   return allIssues;
 };
 

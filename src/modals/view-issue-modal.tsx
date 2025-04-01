@@ -240,7 +240,9 @@ export const ViewIssueModal = ({
           />
           <PaddedText text={`\uf007  ${issue.fields.assignee.displayName}`} />
           {env.DEVELOPER_FIELD && (
-            <PaddedText text={`\uf121  ${issue.fields.developer}`} />
+            <PaddedText
+              text={`\uf121  ${issue.fields.developer?.displayName}`}
+            />
           )}
           <PaddedText text={`\uf50a  ${issue.fields.reporter.displayName}`} />
           {Array.from({

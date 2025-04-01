@@ -2,5 +2,5 @@ pre-commit:
   commands:
     check:
       glob: "*.{ts,tsx,json,jsonc}"
-      run: pnpm lint --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      run: bun run lint --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
       stage_fixed: true

@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 import { atomWithReducer } from "jotai/utils";
 import type { Keybind } from "../lib/keybinds/keybinds.js";
+import { toKeybindsDisplay } from "../lib/keybinds/to-keybinds-display.js";
 import { activeViewAtom } from "./active-view.atom.js";
 import { boardSearchStateAtom } from "./board-search.atom.js";
 
@@ -70,12 +71,5 @@ export const keybindsDisplayAtom = atom((get) => {
     keybinds.map((keybind) => [keybind.key, keybind]),
   );
 
-  return Array.from(keybindsMap.values())
-    .filter((keybind) => !keybind.hidden)
-    .map(toDisplay)
-    .join(" | ");
+  return toKeybindsDisplay(Array.from(keybindsMap.values()));
 });
-
-function toDisplay(keybind: Keybind) {
-  return `${keybind.name}: ${keybind.key}`;
-}
