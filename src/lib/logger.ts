@@ -1,43 +1,51 @@
-import { pino } from "pino";
+import fastRedact from "fast-redact";
+import winston from "winston";
 import { LOG_FILE } from "./constants.js";
 
-const pinoLogger = pino({
-  level: "trace",
-  transport: {
-    targets: [
-      {
-        level: "trace",
-        target: "pino/file",
-        options: {
-          destination: LOG_FILE,
-        },
-      },
-    ],
-  },
-  redact: ["*.headers.authorization", "*.headers.Authorization"],
-  base: undefined, // remove pid, hostname from logs
+const winstonLogger = winston.createLogger({
+  level: "debug",
+  exitOnError: false,
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: LOG_FILE }),
+    ...(process.env.NODE_ENV === "development"
+      ? [
+          new winston.transports.File({
+            filename: LOG_FILE.replace("app.log", "dev.log"),
+            format: winston.format.combine(
+              winston.format.colorize(),
+              winston.format.simple(),
+            ),
+          }),
+        ]
+      : []),
+  ],
 });
 
-interface LogFn {
-  (message: string, extra?: unknown): void;
-  (extra: object, message?: string): void;
-}
+const redact = fastRedact({
+  paths: ["*.headers.authorization", "*.headers.Authorization"],
+  serialize: false,
+});
+
+type LogFn = (message: string, extra?: unknown) => void;
+
+type LogLevel = "debug" | "info" | "warn" | "error" | "fatal";
 
 /**
  * Creates a log function for the given log level.
  * By default, pino only logs the extra object if the first argument is an object,
  * so we need to handle both cases.
  */
-const makeLogFn = (level: pino.Level, prefix?: string): LogFn => {
-  const logFn: LogFn = (first, second) => {
-    if (typeof first === "object") {
-      pinoLogger[level](
-        first,
-        maybePrefix(prefix, second as string | undefined),
-      );
-    } else {
-      pinoLogger[level](second, maybePrefix(prefix, first));
-    }
+const makeLogFn = (level: LogLevel, prefix?: string): LogFn => {
+  const logFn: LogFn = (message, extra) => {
+    // clone to prevent mutating the input
+    const redacted =
+      typeof extra === "object" ? redact(structuredClone(extra)) : extra;
+    winstonLogger.log({
+      level,
+      message: maybePrefix(prefix, message),
+      ...redacted,
+    });
   };
 
   return logFn;
@@ -48,7 +56,6 @@ const makeLogFn = (level: pino.Level, prefix?: string): LogFn => {
  */
 export const makeLogger = (prefix?: string): Logger => {
   return {
-    trace: makeLogFn("trace", prefix),
     debug: makeLogFn("debug", prefix),
     info: makeLogFn("info", prefix),
     warn: makeLogFn("warn", prefix),
@@ -71,7 +78,7 @@ const maybePrefix = (prefix: string | undefined, message = "") => {
   return `[${prefix}] ${message}`;
 };
 
-export type Logger = Record<pino.Level, LogFn> & {
+export type Logger = Record<LogLevel, LogFn> & {
   child: (prefix: string) => Logger;
 };
 
