@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Box, Text } from "ink";
 import { atom, useAtomValue } from "jotai";
 import open from "open";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useGetIssueMergeRequestsQuery } from "../api/get-issue-merge-requests.query.js";
 import type { Issue } from "../api/get-issues.query.js";
 import { highlightedIssueAtom } from "../atoms/highlighted-issue.atom.js";
@@ -54,6 +54,10 @@ export const SelectLinkedResourcesModal = ({
     [issue.key, mergeRequests],
   );
 
+  useEffect(() => {
+    store.set(focusedAtom, 0);
+  }, []);
+
   // border + padding + arrow + space
   // |   > Option 1  |
   // |   Option 2    |
@@ -82,7 +86,7 @@ export const SelectLinkedResourcesModal = ({
         hidden: true,
         handler: () => {
           store.set(focusedAtom, (prev) =>
-            Math.min((mergeRequests?.length ?? 1) - 1, prev + 1),
+            Math.min(options.length - 1, prev + 1),
           );
         },
       });
@@ -104,7 +108,7 @@ export const SelectLinkedResourcesModal = ({
         handler: onClose,
       });
     },
-    [options, mergeRequests],
+    [options],
   );
 
   return (

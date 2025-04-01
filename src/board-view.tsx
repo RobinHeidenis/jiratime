@@ -192,7 +192,7 @@ export const BoardView = () => {
 
       register({
         key: "o",
-        name: "Open",
+        name: "Open linked resources",
         handler: () => {
           openModal("linkedResources");
         },
