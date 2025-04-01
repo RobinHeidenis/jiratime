@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { log } from "../lib/logger.js";
+import { makeLogger } from "../lib/logger.js";
 import type { ApiRequester } from "./request.js";
+
+const logger = makeLogger("GetBoards");
 
 const zStringOrNumber = z
   .string()
@@ -42,7 +44,7 @@ const fetchBoards = async (request: ApiRequester) => {
     const parsed = boardSchema.parse(response);
     allItems.push(...parsed.values);
   } catch (error) {
-    log(`Failed to parse response for boards: ${error}`);
+    logger.error("Failed to parse response", error);
     throw error;
   }
 

@@ -11,6 +11,7 @@
     "dev": "NODE_ENV=development FORCE_HYPERLINK=true bun --watch run src/cli.tsx",
     "build": "tsc --noEmit && bun run bundle",
     "bundle": "bun build ./src/cli.tsx --compile --minify --outfile ./build/jira-tui",
+    "logs": "tail -F \"${XDG_STATE_HOME:-$HOME/.local/state}/jiratime/app.log\" | pino-pretty",
     "lint": "biome check"
   },
   "dependencies": {
@@ -36,6 +37,7 @@
     "@types/node": "^22.13.1",
     "@types/react": "^18.3.18",
     "lefthook": "^1.11.0",
+    "pino-pretty": "^13.0.0",
     "typescript": "^5.7.3"
   }
 }

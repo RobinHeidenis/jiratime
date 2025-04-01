@@ -1,15 +1,13 @@
-import { unlink } from "node:fs";
 import { withFullScreen } from "fullscreen-ink";
 import { App } from "./app.js";
-import { LOGFILE } from "./lib/logger.js";
+import { APP_NAME, LOG_FILE } from "./lib/constants.js";
+import { logger } from "./lib/logger.js";
 
-unlink(LOGFILE, (error) => {
-  if (error) {
-    console.error(error);
-  }
-});
+// Clear the log file and ensure it exists
+await Bun.write(LOG_FILE, "");
+
 const ink = withFullScreen(<App />);
 ink.start();
 await ink.waitUntilExit();
-console.log("jira time is over :(");
+logger.info(`${APP_NAME} is over`);
 process.exit(0); // Not sure why it doen't quit on it's own, but we'll help it out

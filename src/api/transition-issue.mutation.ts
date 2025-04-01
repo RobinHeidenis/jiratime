@@ -3,7 +3,7 @@ import { highlightedIssueAtom } from "../atoms/highlighted-issue.atom.js";
 import { scrollOffsetAtom } from "../atoms/scroll-offset.atom.js";
 import { store } from "../atoms/store.js";
 import { groupIssuesByColumn } from "../board.js";
-import { log } from "../lib/logger.js";
+import { makeLogger } from "../lib/logger.js";
 import type { FetchBoardResult } from "./get-board.query.js";
 import type { Issue } from "./get-issues.query.js";
 import { request } from "./request.js";
@@ -13,6 +13,8 @@ interface TransitionIssueMutationVariables {
   transitionId: string;
   newStatusId: string;
 }
+
+const logger = makeLogger("TransitionIssue");
 
 const transitionIssue = async (variables: TransitionIssueMutationVariables) => {
   await request(`api/3/issue/${variables.issueId}/transitions`, {
@@ -63,7 +65,9 @@ export const useTransitionIssueMutation = () => {
       ]);
 
       if (!board) {
-        log("No board found in query cache, not changing highlighted issue");
+        logger.debug(
+          "No board found in query cache, not changing highlighted issue",
+        );
       } else {
         const grouped = groupIssuesByColumn(
           newIssues,
@@ -121,7 +125,7 @@ export const useTransitionIssueMutation = () => {
       return { previousIssues: issues };
     },
     onError: (error, _variables, context) => {
-      log(`Error updating issue: ${error.message} ${error.stack}`);
+      logger.error("Error updating issue", error);
       queryClient.setQueryData(["issues"], context?.previousIssues ?? []);
     },
     onSuccess: () => {

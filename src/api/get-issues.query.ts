@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { env } from "../env.js";
-import { log } from "../lib/logger.js";
+import { makeLogger } from "../lib/logger.js";
 import { request } from "./request.js";
 
 // Helper type to make TypeScript happy with dynamic field access
 type DynamicFields = {
   [key: string]: unknown;
 };
+
+const logger = makeLogger("GetIssues");
 
 export const issue = z
   .object({
@@ -127,7 +129,7 @@ const fetchIssues = async (jql: string) => {
       allIssues = allIssues.concat(parsed.issues);
       nextPageToken = parsed.nextPageToken;
     } catch (error) {
-      log(`Failed to parse response for issues: ${error}`);
+      logger.error("Failed to parse response for issues", error);
       throw error;
     }
   } while (nextPageToken);

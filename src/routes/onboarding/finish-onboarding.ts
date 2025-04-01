@@ -18,8 +18,6 @@ export type OnboardingData = {
   customFields: Record<keyof CustomFields, string | null>;
 };
 
-const logger = makeLogger("FinishOnboarding");
-
 export async function finishOnboarding(data: OnboardingData): Promise<boolean> {
   const writeResult = await writeConfig(data);
   if (writeResult === false) {
@@ -44,9 +42,7 @@ async function writeConfig(data: OnboardingData): Promise<boolean> {
     await Bun.write(CONFIG_LOCATION, JSON.stringify(configData, null, 2));
     return true;
   } catch (error) {
-    logger.log(
-      `Failed to write config file ${error instanceof Error ? error.message : error}`,
-    );
+    makeLogger("FinishOnboarding").error("Failed to write config file", error);
 
     return false;
   }

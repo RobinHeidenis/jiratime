@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { log } from "../lib/logger.js";
+import { makeLogger } from "../lib/logger.js";
 import type { Issue } from "./get-issues.query.js";
 import { request } from "./request.js";
 
@@ -7,6 +7,8 @@ interface UpdateIssueMutationVariables {
   issueId: string;
   fields: Record<string, unknown>;
 }
+
+const logger = makeLogger("UpdateIssue");
 
 const updateIssue = async (variables: UpdateIssueMutationVariables) => {
   await request(`api/3/issue/${variables.issueId}`, {
@@ -67,7 +69,7 @@ export const useUpdateIssueMutation = () => {
       return { previousIssues: issues };
     },
     onError: (error, _variables, context) => {
-      log(`Error updating issue: ${error.message} ${error.stack}`);
+      logger.error("Error updating issue", error);
       queryClient.setQueryData(["issues"], context?.previousIssues ?? []);
     },
     onSuccess: () => {
