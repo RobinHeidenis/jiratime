@@ -1,8 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Box, Text } from "ink";
-import { atom, useAtomValue } from "jotai";
+import { atom, useAtom, useAtomValue } from "jotai";
 import open from "open";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useGetIssueMergeRequestsQuery } from "../api/get-issue-merge-requests.query.js";
 import type { Issue } from "../api/get-issues.query.js";
 import { highlightedIssueAtom } from "../atoms/highlighted-issue.atom.js";
@@ -19,6 +19,8 @@ import { PaddedText } from "../padded-text.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
 const focusedAtom = atom(0);
+const optionsAtom = atom<Array<{ label: string; value: string }>>([]);
+const focusedOptionAtom = atom((get) => get(optionsAtom)[get(focusedAtom)]);
 
 export const SelectLinkedResourcesModal = ({
   onClose,
@@ -40,8 +42,11 @@ export const SelectLinkedResourcesModal = ({
     !!issue,
   );
 
-  const options = useMemo(
-    () => [
+  const [options, setOptions] = useAtom(optionsAtom);
+  
+
+  useEffect(() => {
+    const options = [
       {
         label: "Open issue in Jira",
         value: `${env.JIRA_BASE_URL}/browse/${issue.key}`,
@@ -50,9 +55,10 @@ export const SelectLinkedResourcesModal = ({
         label: `[${mergeRequest.repositoryName}] ${mergeRequest.name}${mergeRequest.status !== "OPEN" ? ` (${mergeRequest.status.toLowerCase()})` : ""}`,
         value: mergeRequest.url,
       })) ?? []),
-    ],
-    [issue.key, mergeRequests],
-  );
+    ];
+
+    setOptions(options);
+  }, [setOptions, issue.key, mergeRequests]);
 
   useEffect(() => {
     store.set(focusedAtom, 0);
@@ -86,7 +92,7 @@ export const SelectLinkedResourcesModal = ({
         hidden: true,
         handler: () => {
           store.set(focusedAtom, (prev) =>
-            Math.min(options.length - 1, prev + 1),
+            Math.min(store.get(optionsAtom).length - 1, prev + 1),
           );
         },
       });
@@ -95,9 +101,9 @@ export const SelectLinkedResourcesModal = ({
         ...CONFIRM_KEY,
         name: "Confirm",
         handler: () => {
-          const focused = store.get(focusedAtom);
+          const focusedOption = store.get(focusedOptionAtom);
 
-          open(options[focused]!.value);
+          open(focusedOption!.value);
           onClose();
         },
       });
@@ -126,7 +132,7 @@ export const SelectLinkedResourcesModal = ({
       </Text>
       <PaddedText
         maxLength={maxLength}
-        text={`   ${focused === 0 ? "> " : " "}${options[0]!.label}`}
+        text={`   ${focused === 0 ? "> " : " "}${options[0]?.label}`}
         textProps={focused === 0 ? { color: "blue" } : { color: undefined }}
       />
       <PaddedText maxLength={maxLength} text="" />
