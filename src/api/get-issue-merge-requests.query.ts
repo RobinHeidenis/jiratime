@@ -22,7 +22,11 @@ const fetchIssueMergeRequests = async (issueId: string) => {
     `dev-status/1.0/issue/details?issueId=${issueId}`,
   );
 
-  return z.array(mergeRequest).parse(response?.detail[0]?.pullRequests);
+  if (!response?.detail?.length || !response?.detail[0]?.pullRequests) {
+    return [];
+  }
+
+  return z.array(mergeRequest).parse(response.detail[0].pullRequests);
 };
 
 export const useGetIssueMergeRequestsQuery = (

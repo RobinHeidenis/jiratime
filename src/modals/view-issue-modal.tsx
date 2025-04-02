@@ -159,7 +159,7 @@ export const ViewIssueModal = ({
 
       register({
         key: "o",
-        name: "Open linked resources",
+        name: "Linked resources",
         handler: () => {
           openModal("linkedResources", store.get(issueAtom)!.id);
         },
@@ -167,7 +167,7 @@ export const ViewIssueModal = ({
 
       register({
         key: "y",
-        name: "Yank ticket number",
+        name: "Copy ticket number",
         handler: () => {
           clipboard.writeSync(store.get(issueAtom)!.key);
         },
@@ -176,8 +176,7 @@ export const ViewIssueModal = ({
       register({
         key: "Y",
         modifiers: ["shift"],
-        name: "Yank branch name",
-        hidden: true,
+        name: "Copy branch name",
         handler: () => {
           const issue = store.get(issueAtom)!;
 

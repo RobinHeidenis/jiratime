@@ -44,7 +44,7 @@ const makeLogFn = (level: LogLevel, prefix?: string): LogFn => {
     winstonLogger.log({
       level,
       message: maybePrefix(prefix, message),
-      ...redacted,
+      data: redacted,
     });
   };
 

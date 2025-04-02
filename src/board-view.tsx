@@ -194,7 +194,7 @@ export const BoardView = () => {
 
       register({
         key: "o",
-        name: "Open linked resources",
+        name: "Linked resources",
         handler: () => {
           openModal("linkedResources");
         },
@@ -202,7 +202,7 @@ export const BoardView = () => {
 
       register({
         key: "y",
-        name: "Yank ticket number",
+        name: "Copy ticket number",
         hidden: true,
         handler: () => {
           const highlightedIssue = store.get(highlightedIssueAtom);
@@ -218,7 +218,7 @@ export const BoardView = () => {
       register({
         key: "Y",
         modifiers: ["shift"],
-        name: "Yank branch name",
+        name: "Copy branch name",
         hidden: true,
         handler: () => {
           const highlightedIssue = store.get(highlightedIssueAtom);
