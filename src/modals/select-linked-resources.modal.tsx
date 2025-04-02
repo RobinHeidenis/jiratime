@@ -18,9 +18,20 @@ import {
 import { PaddedText } from "../padded-text.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
+type BaseOption = { label: string; value: string };
+type JiraOption = { type: "jira" } & BaseOption;
+type MergeRequestOption = { type: "mergeRequest"; status: string } & BaseOption;
+
+type Option = JiraOption | MergeRequestOption;
+
 const focusedAtom = atom(0);
-const optionsAtom = atom<Array<{ label: string; value: string }>>([]);
+const optionsAtom = atom<Option[]>([]);
 const focusedOptionAtom = atom((get) => get(optionsAtom)[get(focusedAtom)]);
+const openMergeRequestOptionsAtom = atom((get) =>
+  get(optionsAtom).filter(
+    (option) => option.type === "mergeRequest" && option.status === "OPEN",
+  ),
+);
 
 export const SelectLinkedResourcesModal = ({
   onClose,
@@ -43,18 +54,23 @@ export const SelectLinkedResourcesModal = ({
   );
 
   const [options, setOptions] = useAtom(optionsAtom);
-  
 
   useEffect(() => {
     const options = [
       {
+        type: "jira",
         label: "Open issue in Jira",
         value: `${env.JIRA_BASE_URL}/browse/${issue.key}`,
-      },
-      ...(mergeRequests?.map((mergeRequest) => ({
-        label: `[${mergeRequest.repositoryName}] ${mergeRequest.name}${mergeRequest.status !== "OPEN" ? ` (${mergeRequest.status.toLowerCase()})` : ""}`,
-        value: mergeRequest.url,
-      })) ?? []),
+      } satisfies JiraOption,
+      ...(mergeRequests?.map(
+        (mergeRequest) =>
+          ({
+            type: "mergeRequest",
+            status: mergeRequest.status,
+            label: `[${mergeRequest.repositoryName}] ${mergeRequest.name}${mergeRequest.status !== "OPEN" ? ` (${mergeRequest.status.toLowerCase()})` : ""}`,
+            value: mergeRequest.url,
+          }) satisfies MergeRequestOption,
+      ) ?? []),
     ];
 
     setOptions(options);
@@ -105,6 +121,21 @@ export const SelectLinkedResourcesModal = ({
 
           open(focusedOption!.value);
           onClose();
+        },
+      });
+
+      register({
+        key: "a",
+        name: "Open all open MRs",
+        when: () => store.get(openMergeRequestOptionsAtom).length > 0,
+        handler: () => {
+          const openMergeRequestOptions = store.get(
+            openMergeRequestOptionsAtom,
+          );
+
+          for (const option of openMergeRequestOptions) {
+            open(option.value);
+          }
         },
       });
 
