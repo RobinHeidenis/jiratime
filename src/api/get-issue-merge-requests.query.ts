@@ -10,6 +10,11 @@ const mergeRequest = z.object({
   repositoryName: z.string(),
   status: z.enum(["OPEN", "MERGED", "DECLINED"]),
   url: z.string(),
+  reviewers: z.array(
+    z.object({
+      approved: z.boolean(),
+    }),
+  ),
 });
 
 const fetchIssueMergeRequests = async (issueId: string) => {

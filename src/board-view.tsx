@@ -1,5 +1,6 @@
 import { Spinner } from "@inkjs/ui";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
+import clipboard from "clipboardy";
 import { Box, Text } from "ink";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
@@ -25,6 +26,7 @@ import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
 import { useKeybinds } from "./hooks/use-keybinds.js";
 import { CONFIRM_KEY } from "./lib/keybinds/keys.js";
+import { formatBranchName } from "./lib/utils/format-branch-name.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectLinkedResourcesModal } from "./modals/select-linked-resources.modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
@@ -195,6 +197,43 @@ export const BoardView = () => {
         name: "Open linked resources",
         handler: () => {
           openModal("linkedResources");
+        },
+      });
+
+      register({
+        key: "y",
+        name: "Yank ticket number",
+        hidden: true,
+        handler: () => {
+          const highlightedIssue = store.get(highlightedIssueAtom);
+
+          if (!highlightedIssue) {
+            return;
+          }
+
+          clipboard.writeSync(highlightedIssue.key ?? "BAZINGA");
+        },
+      });
+
+      register({
+        key: "Y",
+        modifiers: ["shift"],
+        name: "Yank branch name",
+        hidden: true,
+        handler: () => {
+          const highlightedIssue = store.get(highlightedIssueAtom);
+
+          if (!highlightedIssue) {
+            return;
+          }
+
+          const branchName = formatBranchName(
+            highlightedIssue.summary!,
+            highlightedIssue.key!,
+            highlightedIssue.issueType!,
+          );
+
+          clipboard.writeSync(branchName);
         },
       });
 

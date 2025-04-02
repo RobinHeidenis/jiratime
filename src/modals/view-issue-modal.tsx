@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import clipboard from "clipboardy";
 import { Box, Text } from "ink";
 import { atom, useStore } from "jotai";
 import { useAtomValue } from "jotai";
@@ -17,6 +18,7 @@ import { priorityMap } from "../issue.js";
 import { ADFRenderer } from "../lib/adf/adf-renderer.js";
 import type { TopLevelNode } from "../lib/adf/nodes.js";
 import { CLOSE_KEY, DOWN_KEY, UP_KEY } from "../lib/keybinds/keys.js";
+import { hyphenatedSummary } from "../lib/utils/hyphenated-summary.js";
 import { PaddedText } from "../padded-text.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
@@ -160,6 +162,32 @@ export const ViewIssueModal = ({
         name: "Open linked resources",
         handler: () => {
           openModal("linkedResources", store.get(issueAtom)!.id);
+        },
+      });
+
+      register({
+        key: "y",
+        name: "Yank ticket number",
+        handler: () => {
+          clipboard.writeSync(store.get(issueAtom)!.key);
+        },
+      });
+
+      register({
+        key: "Y",
+        modifiers: ["shift"],
+        name: "Yank branch name",
+        hidden: true,
+        handler: () => {
+          const issue = store.get(issueAtom)!;
+
+          if (!issue) {
+            return;
+          }
+
+          const branchName = `${issue.key}-${hyphenatedSummary(issue.fields.summary)}`;
+
+          clipboard.writeSync(branchName);
         },
       });
 

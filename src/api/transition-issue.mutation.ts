@@ -82,6 +82,8 @@ export const useTransitionIssueMutation = () => {
             store.set(highlightedIssueAtom, {
               id: issues[issueIndex]?.id ?? null,
               key: issues[issueIndex]?.key ?? null,
+              summary: issues[issueIndex]?.fields.summary ?? null,
+              issueType: issues[issueIndex]?.fields.issuetype.name ?? null,
               column: columnIndex,
               index: issueIndex,
             });

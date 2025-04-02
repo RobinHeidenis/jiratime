@@ -43,6 +43,9 @@ export const issue = z
         project: z.object({
           id: z.string(),
         }),
+        issuetype: z.object({
+          name: z.string(),
+        }),
       })
       .and(
         z.record(z.string(), z.unknown()), // Allow any additional fields

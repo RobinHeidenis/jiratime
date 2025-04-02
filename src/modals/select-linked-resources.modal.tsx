@@ -62,15 +62,22 @@ export const SelectLinkedResourcesModal = ({
         label: "Open issue in Jira",
         value: `${env.JIRA_BASE_URL}/browse/${issue.key}`,
       } satisfies JiraOption,
-      ...(mergeRequests?.map(
-        (mergeRequest) =>
-          ({
-            type: "mergeRequest",
-            status: mergeRequest.status,
-            label: `[${mergeRequest.repositoryName}] ${mergeRequest.name}${mergeRequest.status !== "OPEN" ? ` (${mergeRequest.status.toLowerCase()})` : ""}`,
-            value: mergeRequest.url,
-          }) satisfies MergeRequestOption,
-      ) ?? []),
+      ...(mergeRequests?.map((mergeRequest) => {
+        const status =
+          mergeRequest.status !== "OPEN"
+            ? ` (${mergeRequest.status.toLowerCase()})`
+            : mergeRequest.reviewers?.length &&
+                mergeRequest.reviewers.every((reviewer) => reviewer.approved)
+              ? " (approved)"
+              : undefined;
+
+        return {
+          type: "mergeRequest",
+          status: mergeRequest.status,
+          label: `[${mergeRequest.repositoryName}] ${mergeRequest.name}${status ?? ""}`,
+          value: mergeRequest.url,
+        } satisfies MergeRequestOption;
+      }) ?? []),
     ];
 
     setOptions(options);
@@ -126,7 +133,7 @@ export const SelectLinkedResourcesModal = ({
 
       register({
         key: "a",
-        name: "Open all open MRs",
+        name: "Open all reviewable MRs",
         when: () => store.get(openMergeRequestOptionsAtom).length > 0,
         handler: () => {
           const openMergeRequestOptions = store.get(
@@ -169,8 +176,8 @@ export const SelectLinkedResourcesModal = ({
       <PaddedText maxLength={maxLength} text="" />
       <PaddedText maxLength={maxLength} text="   Merge requests:" />
       {isLoading ? (
-        <PaddedText maxLength={maxLength} text="Loading..." />
-      ) : (
+        <PaddedText maxLength={maxLength} text="    Loading..." />
+      ) : mergeRequests?.length ? (
         options.slice(1).map((option, index) => {
           const text =
             `   ${index + 1 === focused ? "> " : " "}${option.label}`.padEnd(
@@ -187,6 +194,8 @@ export const SelectLinkedResourcesModal = ({
             </Text>
           );
         })
+      ) : (
+        <PaddedText maxLength={maxLength} text="    No merge requests" />
       )}
       <Text>{"".padEnd(maxLength, " ")}</Text>
     </Box>
