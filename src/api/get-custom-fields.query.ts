@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { log } from "../lib/log.js";
+import { makeLogger } from "../lib/logger.js";
 import type { ApiRequester } from "./request.js";
+
+const logger = makeLogger("GetCustomFields");
 
 const field = z.object({
   id: z.string(),
@@ -20,7 +22,7 @@ const fetchCustomFields = async (request: ApiRequester) => {
       .parse(response)
       .filter((f) => f.custom);
   } catch (error) {
-    log(`Failed to parse response for 'field': ${error}`);
+    logger.error("Failed to parse response", error);
     throw error;
   }
 };

@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { env } from "../env.js";
-import { log } from "../lib/log.js";
+import { makeLogger } from "../lib/logger.js";
 import { request } from "./request.js";
+
+const logger = makeLogger("GetBoard");
 
 const boardSchema = z.object({
   columnConfig: z.object({
@@ -40,7 +42,7 @@ const fetchBoard = async () => {
       filter: filter.parse(filterResponse),
     };
   } catch (error) {
-    log(`Failed to parse response for board: ${error}`);
+    logger.error("Failed to parse response for board", error);
     throw error;
   }
 };

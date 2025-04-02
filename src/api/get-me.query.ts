@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { log } from "../lib/log.js";
+import { makeLogger } from "../lib/logger.js";
 import type { ApiRequester } from "./request.js";
+
+const logger = makeLogger("GetMe");
 
 const profile = z.object({
   accountId: z.string(),
@@ -16,7 +18,7 @@ const fetchMe = async (request: ApiRequester) => {
   try {
     return profile.parse(response);
   } catch (error) {
-    log(`Failed to parse response for 'myself': ${error}`);
+    logger.error("Failed to parse response", error);
     throw error;
   }
 };

@@ -1,7 +1,7 @@
 import type { JiraProfile } from "../../api/get-me.query.js";
 import type { Configuration } from "../../env.js";
 import { CONFIG_LOCATION } from "../../lib/constants.js";
-import { makeLogger } from "../../lib/log.js";
+import { makeLogger } from "../../lib/logger.js";
 
 export const CUSTOM_FIELDS = {
   storyPoints: "Story points",
@@ -17,8 +17,6 @@ export type OnboardingData = {
   profile: JiraProfile;
   customFields: Record<keyof CustomFields, string | null>;
 };
-
-const logger = makeLogger("FinishOnboarding");
 
 export async function finishOnboarding(data: OnboardingData): Promise<boolean> {
   const writeResult = await writeConfig(data);
@@ -44,9 +42,7 @@ async function writeConfig(data: OnboardingData): Promise<boolean> {
     await Bun.write(CONFIG_LOCATION, JSON.stringify(configData, null, 2));
     return true;
   } catch (error) {
-    logger.log(
-      `Failed to write config file ${error instanceof Error ? error.message : error}`,
-    );
+    makeLogger("FinishOnboarding").error("Failed to write config file", error);
 
     return false;
   }
