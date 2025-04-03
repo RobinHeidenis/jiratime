@@ -1,8 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
+import clipboard from "clipboardy";
 import { Box, Text } from "ink";
 import { atom, useStore } from "jotai";
 import { useAtomValue } from "jotai";
 import { useEffect } from "react";
+import { prefetchIssueMergeRequests } from "../api/get-issue-merge-requests.query.js";
 import { prefetchIssueTransitions } from "../api/get-issue-transitions.query.js";
 import type { Issue } from "../api/get-issues.query.js";
 import { prefetchPriorities } from "../api/get-priorities.query.js";
@@ -13,10 +15,10 @@ import { env } from "../env.js";
 import { useKeybinds } from "../hooks/use-keybinds.js";
 import { useViewedIssue } from "../hooks/use-viewed-issue.js";
 import { priorityMap } from "../issue.js";
+import { copyBranchName } from "../keyboard-handlers/copy-branch-name.js";
 import { ADFRenderer } from "../lib/adf/adf-renderer.js";
 import type { TopLevelNode } from "../lib/adf/nodes.js";
 import { CLOSE_KEY, DOWN_KEY, UP_KEY } from "../lib/keybinds/keys.js";
-import { openIssueInBrowser } from "../lib/utils/openIssueInBrowser.js";
 import { PaddedText } from "../padded-text.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
@@ -157,12 +159,36 @@ export const ViewIssueModal = ({
 
       register({
         key: "o",
-        name: "Open in browser",
+        name: "Linked resources",
         handler: () => {
-          const issue = store.get(issueAtom);
-          if (issue) {
-            openIssueInBrowser(issue.key);
+          openModal("linkedResources", store.get(issueAtom)!.id);
+        },
+      });
+
+      register({
+        key: "y",
+        name: "Copy ticket number",
+        handler: () => {
+          clipboard.writeSync(store.get(issueAtom)!.key);
+        },
+      });
+
+      register({
+        key: "Y",
+        modifiers: ["shift"],
+        name: "Copy branch name",
+        handler: () => {
+          const issue = store.get(issueAtom)!;
+
+          if (!issue) {
+            return;
           }
+
+          copyBranchName(
+            issue.key,
+            issue.fields.issuetype.name,
+            issue.fields.summary,
+          );
         },
       });
 
@@ -184,6 +210,7 @@ export const ViewIssueModal = ({
   prefetchUsers(queryClient, issue.id);
   prefetchPriorities(queryClient, issue.fields.project.id);
   prefetchIssueTransitions(queryClient, issue.id);
+  prefetchIssueMergeRequests(queryClient, issue.id);
 
   const paddedText = description.map((line) => `${line} `).join("\n");
 

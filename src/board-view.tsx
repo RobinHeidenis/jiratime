@@ -1,5 +1,6 @@
 import { Spinner } from "@inkjs/ui";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
+import clipboard from "clipboardy";
 import { Box, Text } from "ink";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
@@ -24,9 +25,10 @@ import { Board } from "./board.js";
 import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
 import { useKeybinds } from "./hooks/use-keybinds.js";
+import { copyBranchName } from "./keyboard-handlers/copy-branch-name.js";
 import { CONFIRM_KEY } from "./lib/keybinds/keys.js";
-import { openIssueInBrowser } from "./lib/utils/openIssueInBrowser.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
+import { SelectLinkedResourcesModal } from "./modals/select-linked-resources.modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
 import { SelectUsersModal } from "./modals/select-users-modal.js";
 import { UpdateAssigneeModal } from "./modals/update-assignee.modal.js";
@@ -192,15 +194,44 @@ export const BoardView = () => {
 
       register({
         key: "o",
-        name: "Open",
+        name: "Linked resources",
         handler: () => {
-          const selectedIssue = store.get(highlightedIssueAtom);
+          openModal("linkedResources");
+        },
+      });
 
-          if (!selectedIssue?.key) {
+      register({
+        key: "y",
+        name: "Copy ticket number",
+        hidden: true,
+        handler: () => {
+          const highlightedIssue = store.get(highlightedIssueAtom);
+
+          if (!highlightedIssue?.key) {
             return;
           }
 
-          openIssueInBrowser(selectedIssue.key);
+          clipboard.writeSync(highlightedIssue.key);
+        },
+      });
+
+      register({
+        key: "Y",
+        modifiers: ["shift"],
+        name: "Copy branch name",
+        hidden: true,
+        handler: () => {
+          const highlightedIssue = store.get(highlightedIssueAtom);
+
+          if (!highlightedIssue) {
+            return;
+          }
+
+          copyBranchName(
+            highlightedIssue.key!,
+            highlightedIssue.issueType!,
+            highlightedIssue.summary!,
+          );
         },
       });
 
@@ -285,6 +316,12 @@ export const BoardView = () => {
         <SelectLaneModal
           issueId={modalIssueId}
           onClose={() => closeModal("moveIssue")}
+        />
+      )}
+      {modals.linkedResources && (hasHighlightedIssue || modalIssueId) && (
+        <SelectLinkedResourcesModal
+          issueId={modalIssueId}
+          onClose={() => closeModal("linkedResources")}
         />
       )}
     </>

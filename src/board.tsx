@@ -8,6 +8,7 @@ import { boardSearchStateAtom } from "./atoms/board-search.atom.js";
 import { highlightedIssueAtom } from "./atoms/highlighted-issue.atom.js";
 import { inputDisabledAtom } from "./atoms/modals.atom.js";
 import { scrollOffsetAtom } from "./atoms/scroll-offset.atom.js";
+import { store } from "./atoms/store.js";
 import { viewedIssueAtom } from "./atoms/viewed-issue.atom.js";
 import { Column } from "./column.js";
 import { useStdoutDimensions } from "./useStdoutDimensions.js";
@@ -110,6 +111,8 @@ export const Board = ({
     setHighlightedIssue({
       column: issueColumn,
       index: issueIdxInColumn,
+      summary: firstIssue.fields.summary ?? null,
+      issueType: firstIssue.fields.issuetype.name ?? null,
       id: firstIssue.id,
       key: firstIssue.key,
     });
@@ -180,6 +183,8 @@ export const Board = ({
           ...prev,
           id: issue?.id ?? null,
           key: issue?.key ?? null,
+          summary: issue?.fields.summary ?? null,
+          issueType: issue?.fields.issuetype.name ?? null,
           index: newIndex,
         };
       });
@@ -197,6 +202,8 @@ export const Board = ({
           ...prev,
           id: issue?.id ?? null,
           key: issue?.key ?? null,
+          summary: issue?.fields.summary ?? null,
+          issueType: issue?.fields.issuetype.name ?? null,
           index: newIndex,
         };
       });
@@ -223,6 +230,8 @@ export const Board = ({
         return {
           id: issue?.id ?? null,
           key: issue?.key ?? null,
+          summary: issue?.fields.summary ?? null,
+          issueType: issue?.fields.issuetype.name ?? null,
           column: newIndex,
           index: newIssueIndex,
         };
@@ -251,12 +260,36 @@ export const Board = ({
         return {
           id: issue?.id ?? null,
           key: issue?.key ?? null,
+          summary: issue?.fields.summary ?? null,
+          issueType: issue?.fields.issuetype.name ?? null,
           column: newIndex,
           index: newIssueIndex,
         };
       });
     }
   });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Only run once on mount
+  useEffect(() => {
+    const firstColumnWithIssues = columns.findIndex(
+      (column) => groupedIssues[column]?.length,
+    );
+
+    if (firstColumnWithIssues === -1) {
+      return;
+    }
+
+    const firstIssue = groupedIssues[columns[firstColumnWithIssues]!]![0];
+
+    store.set(highlightedIssueAtom, {
+      column: firstColumnWithIssues,
+      index: 0,
+      id: firstIssue?.id ?? null,
+      key: firstIssue?.key ?? null,
+      summary: firstIssue?.fields.summary ?? null,
+      issueType: firstIssue?.fields.issuetype.name ?? null,
+    });
+  }, []);
 
   return (
     <Box flexDirection="column" width={width - 2}>

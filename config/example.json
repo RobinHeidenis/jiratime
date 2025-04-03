@@ -5,6 +5,7 @@
   "JIRA_ACCOUNT_ID": "optional: your account id",
   "STORY_POINTS_FIELD": "<customfield_id>",
   "DEVELOPER_FIELD": "<customfield_id>",
+  "branchFormat": "myProject/$issueType/$issueKey-$issueSummary",
   "boards": {
     "3": {
       "jqlPrefix": "Sprint in openSprints() AND status NOT IN (\"Won't fix\") AND"
