@@ -20,7 +20,11 @@ import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
 type BaseOption = { label: string; value: string };
 type JiraOption = { type: "jira" } & BaseOption;
-type MergeRequestOption = { type: "mergeRequest"; status: string } & BaseOption;
+type MergeRequestOption = {
+  type: "mergeRequest";
+  status: string;
+  allApproved: boolean;
+} & BaseOption;
 
 type Option = JiraOption | MergeRequestOption;
 
@@ -29,7 +33,10 @@ const optionsAtom = atom<Option[]>([]);
 const focusedOptionAtom = atom((get) => get(optionsAtom)[get(focusedAtom)]);
 const openMergeRequestOptionsAtom = atom((get) =>
   get(optionsAtom).filter(
-    (option) => option.type === "mergeRequest" && option.status === "OPEN",
+    (option) =>
+      option.type === "mergeRequest" &&
+      option.status === "OPEN" &&
+      !option.allApproved,
   ),
 );
 
@@ -63,11 +70,14 @@ export const SelectLinkedResourcesModal = ({
         value: `${env.JIRA_BASE_URL}/browse/${issue.key}`,
       } satisfies JiraOption,
       ...(mergeRequests?.map((mergeRequest) => {
+        const allApproved = !!(
+          mergeRequest.reviewers?.length &&
+          mergeRequest.reviewers?.every((reviewer) => reviewer.approved)
+        );
         const status =
           mergeRequest.status !== "OPEN"
             ? ` (${mergeRequest.status.toLowerCase()})`
-            : mergeRequest.reviewers?.length &&
-                mergeRequest.reviewers.every((reviewer) => reviewer.approved)
+            : allApproved
               ? " (approved)"
               : undefined;
 
@@ -76,6 +86,7 @@ export const SelectLinkedResourcesModal = ({
           status: mergeRequest.status,
           label: `[${mergeRequest.repositoryName}] ${mergeRequest.name}${status ?? ""}`,
           value: mergeRequest.url,
+          allApproved,
         } satisfies MergeRequestOption;
       }) ?? []),
     ];
