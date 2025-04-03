@@ -21,7 +21,7 @@ const envVariables = z.object({
   JIRA_ACCOUNT_NAME: z.string().optional(),
   STORY_POINTS_FIELD: z.string(),
   DEVELOPER_FIELD: z.string().optional(),
-  BRANCH_FORMAT: z.string().optional(),
+  branchFormat: z.string().optional(),
   boards: z.record(z.object({ jqlPrefix: z.string() })).optional(),
   onboarded: z.boolean(),
 });

@@ -25,8 +25,8 @@ import { Board } from "./board.js";
 import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
 import { useKeybinds } from "./hooks/use-keybinds.js";
+import { copyBranchName } from "./keyboard-handlers/copy-branch-name.js";
 import { CONFIRM_KEY } from "./lib/keybinds/keys.js";
-import { formatBranchName } from "./lib/utils/format-branch-name.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectLinkedResourcesModal } from "./modals/select-linked-resources.modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
@@ -207,11 +207,11 @@ export const BoardView = () => {
         handler: () => {
           const highlightedIssue = store.get(highlightedIssueAtom);
 
-          if (!highlightedIssue) {
+          if (!highlightedIssue?.key) {
             return;
           }
 
-          clipboard.writeSync(highlightedIssue.key ?? "BAZINGA");
+          clipboard.writeSync(highlightedIssue.key);
         },
       });
 
@@ -227,13 +227,11 @@ export const BoardView = () => {
             return;
           }
 
-          const branchName = formatBranchName(
-            highlightedIssue.summary!,
+          copyBranchName(
             highlightedIssue.key!,
             highlightedIssue.issueType!,
+            highlightedIssue.summary!,
           );
-
-          clipboard.writeSync(branchName);
         },
       });
 

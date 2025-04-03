@@ -15,10 +15,10 @@ import { env } from "../env.js";
 import { useKeybinds } from "../hooks/use-keybinds.js";
 import { useViewedIssue } from "../hooks/use-viewed-issue.js";
 import { priorityMap } from "../issue.js";
+import { copyBranchName } from "../keyboard-handlers/copy-branch-name.js";
 import { ADFRenderer } from "../lib/adf/adf-renderer.js";
 import type { TopLevelNode } from "../lib/adf/nodes.js";
 import { CLOSE_KEY, DOWN_KEY, UP_KEY } from "../lib/keybinds/keys.js";
-import { hyphenatedSummary } from "../lib/utils/hyphenated-summary.js";
 import { PaddedText } from "../padded-text.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
@@ -184,9 +184,11 @@ export const ViewIssueModal = ({
             return;
           }
 
-          const branchName = `${issue.key}-${hyphenatedSummary(issue.fields.summary)}`;
-
-          clipboard.writeSync(branchName);
+          copyBranchName(
+            issue.key,
+            issue.fields.issuetype.name,
+            issue.fields.summary,
+          );
         },
       });
 
