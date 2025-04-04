@@ -2,6 +2,7 @@ import { Box } from "ink";
 import { useAtomValue } from "jotai";
 import { uiAtom } from "../atoms/ui.atom.js";
 import { KeybindsDisplay } from "../keybinds-display.js";
+import { NotificationBar } from "../notifications/notification-bar.js";
 import type { Route } from "../routes/routes.js";
 import { Router } from "./router.js";
 
@@ -19,6 +20,7 @@ export const AppShell = ({ routes }: { routes: readonly Route[] }) => {
         <Router routes={routes} />
         {ui.showKeybinds && <KeybindsDisplay />}
       </Box>
+      <NotificationBar />
     </Box>
   );
 };

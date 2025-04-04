@@ -1,5 +1,4 @@
 import { useQueryClient } from "@tanstack/react-query";
-import clipboard from "clipboardy";
 import { Box, Text } from "ink";
 import { atom, useStore } from "jotai";
 import { useAtomValue } from "jotai";
@@ -16,6 +15,7 @@ import { useKeybinds } from "../hooks/use-keybinds.js";
 import { useViewedIssue } from "../hooks/use-viewed-issue.js";
 import { priorityMap } from "../issue.js";
 import { copyBranchName } from "../keyboard-handlers/copy-branch-name.js";
+import { copyIssueKey } from "../keyboard-handlers/copy-issue-key.js";
 import { ADFRenderer } from "../lib/adf/adf-renderer.js";
 import type { TopLevelNode } from "../lib/adf/nodes.js";
 import { CLOSE_KEY, DOWN_KEY, UP_KEY } from "../lib/keybinds/keys.js";
@@ -169,7 +169,7 @@ export const ViewIssueModal = ({
         key: "y",
         name: "Copy ticket number",
         handler: () => {
-          clipboard.writeSync(store.get(issueAtom)!.key);
+          copyIssueKey(store.get(issueAtom)!);
         },
       });
 
