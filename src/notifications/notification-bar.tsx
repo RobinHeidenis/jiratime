@@ -50,6 +50,7 @@ export const NotificationBar = () => {
           // biome-ignore lint/suspicious/noArrayIndexKey: no alternative
           key={index}
           notification={notification}
+          maxWidth={maxWidth}
         />
       ))}
     </Box>
@@ -58,8 +59,13 @@ export const NotificationBar = () => {
 
 const NotificationToast = ({
   notification: { type, message },
-}: { notification: Notification }) => {
+  maxWidth,
+}: { notification: Notification; maxWidth: number }) => {
   const color = colors[type];
+
+  // If there is a longer message, we need to pad the message to the right,
+  // so that there's no transparent space.
+  const paddingAfter = maxWidth - message.length - 4;
 
   return (
     <Box flexDirection="column" borderStyle="round" borderColor={color}>
@@ -72,7 +78,7 @@ const NotificationToast = ({
         <Box marginLeft={-1}>
           <Text> </Text>
         </Box>
-        <Text>{`${message}  `}</Text>
+        <Text>{`${message}${" ".repeat(paddingAfter)}`}</Text>
       </Box>
     </Box>
   );
