@@ -5,6 +5,7 @@ import {
   type Notification,
   notificationsAtom,
 } from "../atoms/notifications.atom.js";
+import { PaddedText } from "../padded-text.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
 const icons = {
@@ -63,10 +64,6 @@ const NotificationToast = ({
 }: { notification: Notification; maxWidth: number }) => {
   const color = colors[type];
 
-  // If there is a longer message, we need to pad the message to the right,
-  // so that there's no transparent space.
-  const paddingAfter = maxWidth - message.length - 4;
-
   return (
     <Box flexDirection="column" borderStyle="round" borderColor={color}>
       <Box>
@@ -78,7 +75,7 @@ const NotificationToast = ({
         <Box marginLeft={-1}>
           <Text> </Text>
         </Box>
-        <Text>{`${message}${" ".repeat(paddingAfter)}`}</Text>
+        <PaddedText text={message} maxLength={maxWidth - 4} />
       </Box>
     </Box>
   );
