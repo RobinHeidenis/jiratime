@@ -1,6 +1,5 @@
 import { Spinner } from "@inkjs/ui";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
-import clipboard from "clipboardy";
 import { Box, Text } from "ink";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
@@ -26,6 +25,7 @@ import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
 import { useKeybinds } from "./hooks/use-keybinds.js";
 import { copyBranchName } from "./keyboard-handlers/copy-branch-name.js";
+import { copyIssueKey } from "./keyboard-handlers/copy-issue-key.js";
 import { CONFIRM_KEY } from "./lib/keybinds/keys.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectLinkedResourcesModal } from "./modals/select-linked-resources.modal.js";
@@ -211,7 +211,7 @@ export const BoardView = () => {
             return;
           }
 
-          clipboard.writeSync(highlightedIssue.key);
+          copyIssueKey({ key: highlightedIssue.key });
         },
       });
 
