@@ -10,7 +10,6 @@ export type Keybind = {
   aliases?: readonly Alias[];
   name: string;
   handler: () => void;
-  when?: () => boolean;
   description?: string;
   hidden?: boolean;
 };

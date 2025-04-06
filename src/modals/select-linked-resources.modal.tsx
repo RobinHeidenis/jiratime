@@ -1,14 +1,13 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Box, Text } from "ink";
-import { atom, useAtom, useAtomValue } from "jotai";
+import { useAtomValue } from "jotai";
 import open from "open";
-import { useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useGetIssueMergeRequestsQuery } from "../api/get-issue-merge-requests.query.js";
 import type { Issue } from "../api/get-issues.query.js";
 import { highlightedIssueAtom } from "../atoms/highlighted-issue.atom.js";
-import { store } from "../atoms/store.js";
 import { env } from "../env.js";
-import { useKeybinds } from "../hooks/use-keybinds.js";
+import { useKeybind } from "../hooks/use-keybind.js";
 import {
   CLOSE_KEY,
   CONFIRM_KEY,
@@ -28,18 +27,6 @@ type MergeRequestOption = {
 
 type Option = JiraOption | MergeRequestOption;
 
-const focusedAtom = atom(0);
-const optionsAtom = atom<Option[]>([]);
-const focusedOptionAtom = atom((get) => get(optionsAtom)[get(focusedAtom)]);
-const openMergeRequestOptionsAtom = atom((get) =>
-  get(optionsAtom).filter(
-    (option) =>
-      option.type === "mergeRequest" &&
-      option.status === "OPEN" &&
-      !option.allApproved,
-  ),
-);
-
 export const SelectLinkedResourcesModal = ({
   onClose,
   issueId: issueIdOverride,
@@ -47,23 +34,19 @@ export const SelectLinkedResourcesModal = ({
   onClose: () => void;
   issueId?: string | null;
 }) => {
-  const focused = useAtomValue(focusedAtom);
-  const [columns, rows] = useStdoutDimensions();
   const issueId = issueIdOverride ?? useAtomValue(highlightedIssueAtom).id;
   const queryClient = useQueryClient();
   const issues = queryClient.getQueryData(["issues"]) as Issue[];
-
   const issue = issues.find((issue) => issue.id === issueId)!;
+  const [focused, setFocused] = useState(0);
 
   const { data: mergeRequests, isLoading } = useGetIssueMergeRequestsQuery(
     issue?.id!,
     !!issue,
   );
 
-  const [options, setOptions] = useAtom(optionsAtom);
-
-  useEffect(() => {
-    const options = [
+  const options: Option[] = useMemo(
+    () => [
       {
         type: "jira",
         label: "Open issue in Jira",
@@ -89,14 +72,20 @@ export const SelectLinkedResourcesModal = ({
           allApproved,
         } satisfies MergeRequestOption;
       }) ?? []),
-    ];
+    ],
+    [issue, mergeRequests],
+  );
 
-    setOptions(options);
-  }, [setOptions, issue.key, mergeRequests]);
+  const focusedOption = options[focused];
 
-  useEffect(() => {
-    store.set(focusedAtom, 0);
-  }, []);
+  const openMergeRequestOptions = options.filter(
+    (option) =>
+      option.type === "mergeRequest" &&
+      option.status === "OPEN" &&
+      !option.allApproved,
+  );
+
+  const [columns, rows] = useStdoutDimensions();
 
   // border + padding + arrow + space
   // |   > Option 1  |
@@ -108,62 +97,69 @@ export const SelectLinkedResourcesModal = ({
     26 + standardWidth,
   );
 
-  useKeybinds(
-    { view: "SelectLinkedResourcesModal", unregister: true },
-    (register) => {
-      register({
-        ...UP_KEY,
-        name: "Up",
-        hidden: true,
-        handler: () => {
-          store.set(focusedAtom, (prev) => Math.max(0, prev - 1));
-        },
-      });
+  const view = "SelectLinkedResourcesModal";
 
-      register({
-        ...DOWN_KEY,
-        name: "Down",
-        hidden: true,
-        handler: () => {
-          store.set(focusedAtom, (prev) =>
-            Math.min(store.get(optionsAtom).length - 1, prev + 1),
-          );
-        },
-      });
-
-      register({
-        ...CONFIRM_KEY,
-        name: "Confirm",
-        handler: () => {
-          const focusedOption = store.get(focusedOptionAtom);
-
-          open(focusedOption!.value);
-          onClose();
-        },
-      });
-
-      register({
-        key: "a",
-        name: "Open all reviewable MRs",
-        when: () => store.get(openMergeRequestOptionsAtom).length > 0,
-        handler: () => {
-          const openMergeRequestOptions = store.get(
-            openMergeRequestOptionsAtom,
-          );
-
-          for (const option of openMergeRequestOptions) {
-            open(option.value);
-          }
-        },
-      });
-
-      register({
-        ...CLOSE_KEY,
-        name: "Close",
-        handler: onClose,
-      });
+  useKeybind(
+    {
+      ...UP_KEY,
+      name: "Up",
+      hidden: true,
     },
+    () => {
+      setFocused((prev) => Math.max(0, prev - 1));
+    },
+    { view },
+    [],
+  );
+
+  useKeybind(
+    {
+      ...DOWN_KEY,
+      name: "Down",
+      hidden: true,
+    },
+    () => {
+      setFocused((prev) => Math.min(options.length - 1, prev + 1));
+    },
+    { view },
     [options],
+  );
+
+  useKeybind(
+    {
+      ...CONFIRM_KEY,
+      name: "Confirm",
+    },
+    () => {
+      open(focusedOption!.value);
+      onClose();
+    },
+    { view },
+    [focusedOption, onClose],
+  );
+
+  useKeybind(
+    {
+      key: "a",
+      name: "Open all reviewable MRs",
+    },
+    () => {
+      for (const option of openMergeRequestOptions) {
+        open(option.value);
+      }
+    },
+    { view },
+    [openMergeRequestOptions],
+  );
+
+  useKeybind(
+    {
+      ...CLOSE_KEY,
+      name: "Close",
+    },
+    onClose,
+    { view },
+    [],
   );
 
   return (

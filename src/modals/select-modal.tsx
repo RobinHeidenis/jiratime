@@ -1,9 +1,6 @@
 import { Box, Text } from "ink";
-import { atom } from "jotai";
-import { useAtom } from "jotai";
-import { useEffect } from "react";
-import { store } from "../atoms/store.js";
-import { useKeybinds } from "../hooks/use-keybinds.js";
+import { useEffect, useState } from "react";
+import { useKeybind } from "../hooks/use-keybind.js";
 import {
   CLOSE_KEY,
   CONFIRM_KEY,
@@ -18,8 +15,6 @@ export interface Option {
   color?: string;
   extraData?: Record<string, unknown>;
 }
-
-const focusedAtom = atom(0);
 
 export const SelectModal = ({
   title,
@@ -36,13 +31,13 @@ export const SelectModal = ({
   onSelect: (selected: Option) => void;
   onClose: () => void;
 }) => {
-  const [focused, setFocused] = useAtom(focusedAtom);
+  const [focused, setFocused] = useState(0);
 
   useEffect(() => {
     if (initialFocusOnSelected) {
       setFocused(options.findIndex((option) => option.value === selected));
     }
-  }, [initialFocusOnSelected, options, selected, setFocused]);
+  }, [initialFocusOnSelected, options, selected]);
 
   const [columns, rows] = useStdoutDimensions();
 
@@ -60,46 +55,54 @@ export const SelectModal = ({
     title.length + standardWidth,
   );
 
-  useKeybinds(
-    { view: `SelectModal-${title}`, unregister: true },
-    (register) => {
-      register({
-        ...UP_KEY,
-        name: "Up",
-        hidden: true,
-        handler: () => {
-          store.set(focusedAtom, (prev) => Math.max(0, prev - 1));
-        },
-      });
+  const view = `SelectModal-${title}`;
 
-      register({
-        ...DOWN_KEY,
-        name: "Down",
-        hidden: true,
-        handler: () => {
-          store.set(focusedAtom, (prev) =>
-            Math.min(options.length - 1, prev + 1),
-          );
-        },
-      });
-
-      register({
-        ...CONFIRM_KEY,
-        name: "Confirm",
-        handler: () => {
-          const focused = store.get(focusedAtom);
-          onSelect(options[focused]!);
-          onClose();
-        },
-      });
-
-      register({
-        ...CLOSE_KEY,
-        name: "Close",
-        handler: onClose,
-      });
+  useKeybind(
+    {
+      ...UP_KEY,
+      name: "Up",
+      hidden: true,
     },
-    [options],
+    () => {
+      setFocused((prev) => Math.max(0, prev - 1));
+    },
+    { view },
+    [],
+  );
+
+  useKeybind(
+    {
+      ...DOWN_KEY,
+      name: "Down",
+      hidden: true,
+    },
+    () => {
+      setFocused((prev) => Math.min(options.length - 1, prev + 1));
+    },
+    { view },
+    [options.length],
+  );
+
+  useKeybind(
+    {
+      ...CONFIRM_KEY,
+      name: "Confirm",
+    },
+    () => {
+      onSelect(options[focused]!);
+      onClose();
+    },
+    { view },
+    [focused, options, onSelect, onClose],
+  );
+
+  useKeybind(
+    {
+      ...CLOSE_KEY,
+      name: "Close",
+    },
+    onClose,
+    { view },
   );
 
   return (
