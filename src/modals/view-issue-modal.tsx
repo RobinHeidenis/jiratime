@@ -16,7 +16,7 @@ import { copyBranchName } from "../keyboard-handlers/copy-branch-name.js";
 import { copyIssueKey } from "../keyboard-handlers/copy-issue-key.js";
 import { ADFRenderer } from "../lib/adf/adf-renderer.js";
 import type { TopLevelNode } from "../lib/adf/nodes.js";
-import { CLOSE_KEY, DOWN_KEY, UP_KEY } from "../lib/keybinds/keys.js";
+import { CommonKey } from "../lib/keybinds/keys.js";
 import { PaddedText } from "../padded-text.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
@@ -55,48 +55,45 @@ export const ViewIssueModal = ({
   const view = "ViewIssueModal";
 
   useKeybind(
+    "m",
     {
-      key: "m",
+      view,
       name: "Move issue",
     },
     () => {
       openModal("moveIssue", issue!.id);
     },
-    { view },
     [issue, openModal],
   );
 
   useKeybind(
+    "a",
     {
-      key: "a",
+      view,
       name: "Update assignee",
     },
     () => {
       openModal("updateAssignee", issue!.id);
     },
-    { view },
     [issue, openModal],
   );
 
   useKeybind(
+    "p",
     {
-      key: "p",
+      view,
       name: "Update priority",
     },
     () => {
       openModal("updatePriority", issue!.id);
     },
-    { view },
     [issue, openModal],
   );
 
   useKeybind(
+    ["j", "downArrow"], // Don't use CommonKey.Down, excluding ctrl+n here
     {
-      ...DOWN_KEY,
-      aliases: [
-        { key: "", modifiers: ["downArrow"] },
-        { key: "d", modifiers: ["ctrl"] },
-      ],
+      view,
       name: "Scroll down",
       hidden: true,
     },
@@ -110,17 +107,13 @@ export const ViewIssueModal = ({
         );
       }
     },
-    { view },
     [description],
   );
 
   useKeybind(
+    ["k", "upArrow"], // Don't use CommonKey.Up, excluding ctrl+p here
     {
-      ...UP_KEY,
-      aliases: [
-        { key: "", modifiers: ["upArrow"] },
-        { key: "u", modifiers: ["ctrl"] },
-      ],
+      view,
       name: "Scroll up",
       hidden: true,
     },
@@ -129,14 +122,13 @@ export const ViewIssueModal = ({
         setTopOffset((prev) => Math.max(prev - SMALL_SCROLL_INCREMENT, 0));
       }
     },
-    { view },
     [description],
   );
 
   useKeybind(
+    "ctrl + d",
     {
-      key: "d",
-      modifiers: ["ctrl"],
+      view,
       name: "Scroll down (fast)",
       hidden: true,
     },
@@ -150,14 +142,13 @@ export const ViewIssueModal = ({
         );
       }
     },
-    { view },
     [description],
   );
 
   useKeybind(
+    "ctrl + u",
     {
-      key: "u",
-      modifiers: ["ctrl"],
+      view,
       name: "Scroll up (fast)",
       hidden: true,
     },
@@ -166,38 +157,37 @@ export const ViewIssueModal = ({
         setTopOffset((prev) => Math.max(prev - LARGE_SCROLL_INCREMENT, 0));
       }
     },
-    { view },
     [description],
   );
 
   useKeybind(
+    "o",
     {
-      key: "o",
+      view,
       name: "Linked resources",
     },
     () => {
       openModal("linkedResources", issue!.id);
     },
-    { view },
     [openModal, issue],
   );
 
   useKeybind(
+    "y",
     {
-      key: "y",
+      view,
       name: "Copy ticket number",
     },
     () => {
       copyIssueKey(issue!);
     },
-    { view },
     [issue],
   );
 
   useKeybind(
+    "shift + y",
     {
-      key: "Y",
-      modifiers: ["shift"],
+      view,
       name: "Copy branch name",
     },
     () => {
@@ -211,19 +201,18 @@ export const ViewIssueModal = ({
         issue.fields.summary,
       );
     },
-    { view },
     [issue],
   );
 
   useKeybind(
+    CommonKey.Close,
     {
-      ...CLOSE_KEY,
+      view,
       name: "Close",
     },
     () => {
       setViewedIssue(null);
     },
-    { view },
     [setViewedIssue],
   );
 

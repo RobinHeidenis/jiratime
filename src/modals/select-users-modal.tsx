@@ -1,13 +1,7 @@
 import { Box, Text } from "ink";
 import { useState } from "react";
 import { useKeybind } from "../hooks/use-keybind.js";
-import {
-  CLOSE_KEY,
-  CONFIRM_KEY,
-  DOWN_KEY,
-  SPACE_KEY,
-  UP_KEY,
-} from "../lib/keybinds/keys.js";
+import { CommonKey } from "../lib/keybinds/keys.js";
 import type { JiraUser } from "../types/jira-user.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
@@ -40,33 +34,35 @@ export const SelectUsersModal = ({
   const view = "SelectUsersModal";
 
   useKeybind(
+    CommonKey.Down,
     {
-      ...DOWN_KEY,
+      view,
       hidden: true,
       name: "Down",
     },
     () => {
       setFocused((prev) => Math.min(options.length - 1, prev + 1));
     },
-    { view },
     [options],
   );
 
   useKeybind(
+    CommonKey.Up,
     {
-      ...UP_KEY,
+      view,
       hidden: true,
       name: "Up",
     },
     () => {
       setFocused((prev) => Math.max(0, prev - 1));
     },
-    { view },
+    [],
   );
 
   useKeybind(
+    "space",
     {
-      ...SPACE_KEY,
+      view,
       name: "Select",
     },
     () => {
@@ -76,13 +72,13 @@ export const SelectUsersModal = ({
         setSelected((prev) => [...prev, focused]);
       }
     },
-    { view },
     [selected, focused],
   );
 
   useKeybind(
+    CommonKey.Confirm,
     {
-      ...CONFIRM_KEY,
+      view,
       name: "Select",
     },
     () => {
@@ -91,17 +87,16 @@ export const SelectUsersModal = ({
       );
       onClose();
     },
-    { view },
     [options, selected, onSelect, onClose],
   );
 
   useKeybind(
+    CommonKey.Close,
     {
-      ...CLOSE_KEY,
+      view,
       name: "Close",
     },
     onClose,
-    { view },
     [],
   );
 

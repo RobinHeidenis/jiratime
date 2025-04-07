@@ -31,7 +31,7 @@
             "hooks": [
               {
                 "name": "useKeybind",
-                "closureIndex": 1,
+                "closureIndex": 2,
                 "dependenciesIndex": 3
               }
             ]

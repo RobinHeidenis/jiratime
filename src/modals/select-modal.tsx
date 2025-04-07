@@ -1,12 +1,7 @@
 import { Box, Text } from "ink";
 import { useEffect, useState } from "react";
 import { useKeybind } from "../hooks/use-keybind.js";
-import {
-  CLOSE_KEY,
-  CONFIRM_KEY,
-  DOWN_KEY,
-  UP_KEY,
-} from "../lib/keybinds/keys.js";
+import { CommonKey } from "../lib/keybinds/keys.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
 export interface Option {
@@ -58,51 +53,52 @@ export const SelectModal = ({
   const view = `SelectModal-${title}`;
 
   useKeybind(
+    CommonKey.Up,
     {
-      ...UP_KEY,
+      view,
       name: "Up",
       hidden: true,
     },
     () => {
       setFocused((prev) => Math.max(0, prev - 1));
     },
-    { view },
     [],
   );
 
   useKeybind(
+    CommonKey.Down,
     {
-      ...DOWN_KEY,
+      view,
       name: "Down",
       hidden: true,
     },
     () => {
       setFocused((prev) => Math.min(options.length - 1, prev + 1));
     },
-    { view },
     [options.length],
   );
 
   useKeybind(
+    CommonKey.Confirm,
     {
-      ...CONFIRM_KEY,
+      view,
       name: "Confirm",
     },
     () => {
       onSelect(options[focused]!);
       onClose();
     },
-    { view },
     [focused, options, onSelect, onClose],
   );
 
   useKeybind(
+    CommonKey.Close,
     {
-      ...CLOSE_KEY,
+      view,
       name: "Close",
     },
     onClose,
-    { view },
+    [],
   );
 
   return (

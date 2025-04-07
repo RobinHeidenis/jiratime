@@ -8,12 +8,7 @@ import type { Issue } from "../api/get-issues.query.js";
 import { highlightedIssueAtom } from "../atoms/highlighted-issue.atom.js";
 import { env } from "../env.js";
 import { useKeybind } from "../hooks/use-keybind.js";
-import {
-  CLOSE_KEY,
-  CONFIRM_KEY,
-  DOWN_KEY,
-  UP_KEY,
-} from "../lib/keybinds/keys.js";
+import { CommonKey } from "../lib/keybinds/keys.js";
 import { PaddedText } from "../padded-text.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
 
@@ -100,47 +95,48 @@ export const SelectLinkedResourcesModal = ({
   const view = "SelectLinkedResourcesModal";
 
   useKeybind(
+    CommonKey.Up,
     {
-      ...UP_KEY,
+      view,
       name: "Up",
       hidden: true,
     },
     () => {
       setFocused((prev) => Math.max(0, prev - 1));
     },
-    { view },
     [],
   );
 
   useKeybind(
+    CommonKey.Down,
     {
-      ...DOWN_KEY,
+      view,
       name: "Down",
       hidden: true,
     },
     () => {
       setFocused((prev) => Math.min(options.length - 1, prev + 1));
     },
-    { view },
     [options],
   );
 
   useKeybind(
+    CommonKey.Confirm,
     {
-      ...CONFIRM_KEY,
+      view,
       name: "Confirm",
     },
     () => {
       open(focusedOption!.value);
       onClose();
     },
-    { view },
     [focusedOption, onClose],
   );
 
   useKeybind(
+    "a",
     {
-      key: "a",
+      view,
       name: "Open all reviewable MRs",
     },
     () => {
@@ -148,17 +144,16 @@ export const SelectLinkedResourcesModal = ({
         open(option.value);
       }
     },
-    { view },
     [openMergeRequestOptions],
   );
 
   useKeybind(
+    CommonKey.Close,
     {
-      ...CLOSE_KEY,
+      view,
       name: "Close",
     },
     onClose,
-    { view },
     [],
   );
 

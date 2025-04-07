@@ -25,7 +25,7 @@ import { env } from "./env.js";
 import { useKeybind } from "./hooks/use-keybind.js";
 import { copyBranchName } from "./keyboard-handlers/copy-branch-name.js";
 import { copyIssueKey } from "./keyboard-handlers/copy-issue-key.js";
-import { CONFIRM_KEY } from "./lib/keybinds/keys.js";
+import { CommonKey } from "./lib/keybinds/keys.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectLinkedResourcesModal } from "./modals/select-linked-resources.modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
@@ -113,16 +113,15 @@ export const BoardView = () => {
 
     const users = filteredUsers.length ? filteredUsers : allUsers;
 
-    return `Selected users: ${users
-      .map((user) => user.displayName.split(" ")[0])
-      .join(", ")}`;
+    return `Selected users: ${users.map((user) => user.displayName.split(" ")[0]).join(", ")}`;
   }, [filteredUsers, allUsers, developedByMeFilter]);
 
   const view = "BoardView";
 
   useKeybind(
+    "/",
     {
-      key: "/",
+      view,
       name: "Search",
     },
     () => {
@@ -130,13 +129,13 @@ export const BoardView = () => {
         setSearchState("active");
       }
     },
-    { view },
     [searchState, setSearchState],
   );
 
   useKeybind(
+    CommonKey.Confirm,
     {
-      ...CONFIRM_KEY,
+      view,
       name: "View issue",
       hidden: true,
     },
@@ -147,24 +146,23 @@ export const BoardView = () => {
 
       setViewedIssue(highlightedIssue.key);
     },
-    { view },
     [setViewedIssue, highlightedIssue, searchState],
   );
 
   useKeybind(
+    "u",
     {
-      key: "u",
+      view,
       name: "Filter users",
     },
     () => setSelectUsersModalOpen(true),
-    { view },
     [],
   );
 
   useKeybind(
+    "shift + m",
     {
-      key: "M",
-      modifiers: ["shift"],
+      view,
       name: "Assigned to me",
     },
     () => {
@@ -180,14 +178,13 @@ export const BoardView = () => {
         return [me!];
       });
     },
-    { view },
     [me],
   );
 
   useKeybind(
+    "shift + b",
     {
-      key: "B",
-      modifiers: ["shift"],
+      view,
       name: "By me",
     },
     () => {
@@ -197,49 +194,49 @@ export const BoardView = () => {
 
       setDevelopedByMeFilter((current) => !current);
     },
-    { view },
     [me],
   );
 
   useKeybind(
+    "m",
     {
-      key: "m",
+      view,
       name: "Move issue",
     },
     () => {
       openModal("moveIssue");
     },
-    { view },
     [],
   );
 
   useKeybind(
+    "a",
     {
-      key: "a",
+      view,
       name: "Change assignee",
     },
     () => {
       openModal("updateAssignee");
     },
-    { view },
     [],
   );
 
   useKeybind(
+    "o",
     {
-      key: "o",
+      view,
       name: "Linked resources",
     },
     () => {
       openModal("linkedResources");
     },
-    { view },
     [],
   );
 
   useKeybind(
+    "y",
     {
-      key: "y",
+      view,
       name: "Copy ticket number",
       hidden: true,
     },
@@ -250,14 +247,13 @@ export const BoardView = () => {
 
       copyIssueKey({ key: highlightedIssue.key });
     },
-    { view },
     [highlightedIssue],
   );
 
   useKeybind(
+    "shift + y",
     {
-      key: "Y",
-      modifiers: ["shift"],
+      view,
       name: "Copy branch name",
       hidden: true,
     },
@@ -272,18 +268,16 @@ export const BoardView = () => {
         highlightedIssue.summary!,
       );
     },
-    { view },
     [highlightedIssue],
   );
 
   useKeybind(
+    "shift + r",
     {
-      key: "R",
-      modifiers: ["shift"],
+      view,
       name: "Refresh",
     },
     () => queryClient.invalidateQueries(),
-    { view },
     [queryClient],
   );
 

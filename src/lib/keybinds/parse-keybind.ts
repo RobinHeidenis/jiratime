@@ -1,6 +1,6 @@
 import type { InkModifier, Keybind, ModifierKey } from "./keybinds.js";
 
-export function parseKeybind<TKeyOrKeys extends Key | [Key, ...Key[]]>(
+export function parseKeybind<TKeyOrKeys extends Key | readonly [Key, ...Key[]]>(
   keyOrKeys: TKeyOrKeys,
 ): TKeyOrKeys extends Key[]
   ? Pick<Keybind, "key" | "modifiers" | "aliases">
@@ -8,7 +8,7 @@ export function parseKeybind<TKeyOrKeys extends Key | [Key, ...Key[]]>(
   if (Array.isArray(keyOrKeys)) {
     // Note: using destructuring ([mainKeybind, ...aliases] = keyOrKeys) causes aliases to be a string[]
     const [mainKeybind] = keyOrKeys;
-    const aliases = keyOrKeys.slice(1);
+    const aliases = keyOrKeys.slice(1) as Key[];
 
     return {
       ...parseKeybind(mainKeybind),
@@ -16,7 +16,7 @@ export function parseKeybind<TKeyOrKeys extends Key | [Key, ...Key[]]>(
     } as Pick<Keybind, "key" | "modifiers" | "aliases">;
   }
 
-  return parseSingleKeybind(keyOrKeys);
+  return parseSingleKeybind(keyOrKeys as Key);
 }
 
 function parseSingleKeybind(keybind: Key): Pick<Keybind, "key" | "modifiers"> {
