@@ -4,3 +4,6 @@ pre-commit:
       glob: "*.{ts,tsx,json,jsonc}"
       run: bun run lint --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
       stage_fixed: true
+    test:
+      glob: "*.{ts,tsx}"
+      run: bun test
