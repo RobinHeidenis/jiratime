@@ -1,18 +1,16 @@
 import { Text } from "ink";
-import { ansiRegex } from "./lib/adf/adf-renderer.js";
+import { pad } from "./lib/utils/pad.js";
 
 export const PaddedText = ({
-  text,
-  maxLength = 20,
+  text = "",
+  length,
   textProps = {},
 }: {
-  text: string;
-  maxLength?: number;
+  text?: string;
+  length: number;
   textProps?: Partial<Parameters<typeof Text>[0]>;
 }) => {
-  const textLengthWithoutFormatting = text.replaceAll(ansiRegex(), "").length;
-  const padded =
-    text + " ".repeat(Math.max(0, maxLength - textLengthWithoutFormatting));
+  const padded = pad(text, length);
 
   return <Text {...textProps}>{padded}</Text>;
 };

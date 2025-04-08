@@ -75,7 +75,7 @@ const NotificationToast = ({
         <Box marginLeft={-1}>
           <Text> </Text>
         </Box>
-        <PaddedText text={message} maxLength={maxWidth - 4} />
+        <PaddedText text={message} length={maxWidth - 4} />
       </Box>
     </Box>
   );

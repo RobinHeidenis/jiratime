@@ -174,6 +174,14 @@ export const ViewIssueModal = ({
       });
 
       register({
+        key: "c",
+        name: "Open checklist",
+        handler: () => {
+          openModal("checklist", store.get(issueAtom)!.id);
+        },
+      });
+
+      register({
         key: "Y",
         modifiers: ["shift"],
         name: "Copy branch name",
@@ -222,7 +230,7 @@ export const ViewIssueModal = ({
       flexDirection="column"
       position="absolute"
       borderStyle={"round"}
-      borderColor={"greenBright"}
+      borderColor={"green"}
       marginLeft={(columns - width) / 2}
       marginTop={(rows - 50) / 2}
     >
@@ -255,28 +263,37 @@ export const ViewIssueModal = ({
           height={38}
           flexDirection="column"
         >
-          <PaddedText text={`\uf292  ${issue.key}`} />
+          <PaddedText text={`\uf292  ${issue.key}`} length={20} />
           <PaddedText
             text={`\uf43a  ${issue.fields.storyPoints !== null ? issue.fields.storyPoints : "N/A"}`}
+            length={20}
           />
           <PaddedText
             text={`\uf161  ${issue.fields.priority.name}`}
             textProps={{
               color: priorityMap[issue.fields.priority.name] ?? "yellow",
             }}
+            length={20}
           />
-          <PaddedText text={`\uf007  ${issue.fields.assignee.displayName}`} />
+          <PaddedText
+            text={`\uf007  ${issue.fields.assignee.displayName}`}
+            length={20}
+          />
           {env.DEVELOPER_FIELD && (
             <PaddedText
               text={`\uf121  ${issue.fields.developer?.displayName}`}
+              length={20}
             />
           )}
-          <PaddedText text={`\uf50a  ${issue.fields.reporter.displayName}`} />
+          <PaddedText
+            text={`\uf50a  ${issue.fields.reporter.displayName}`}
+            length={20}
+          />
           {Array.from({
             length: 40 + (env.DEVELOPER_FIELD ? 0 : 1) - 10,
           }).map((_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: We're not actually showing any content, just spaces to override the underlying content
-            <PaddedText key={i} text={""} />
+            <PaddedText key={i} length={20} />
           ))}
         </Box>
       </Box>

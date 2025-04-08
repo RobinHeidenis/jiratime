@@ -32,6 +32,7 @@ import { SelectLinkedResourcesModal } from "./modals/select-linked-resources.mod
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
 import { SelectUsersModal } from "./modals/select-users-modal.js";
 import { UpdateAssigneeModal } from "./modals/update-assignee.modal.js";
+import { ViewIssueChecklistModal } from "./modals/view-issue-checklist.modal.js";
 import { ViewIssueModal } from "./modals/view-issue-modal.js";
 import type { JiraUser } from "./types/jira-user.js";
 
@@ -322,6 +323,12 @@ export const BoardView = () => {
         <SelectLinkedResourcesModal
           issueId={modalIssueId}
           onClose={() => closeModal("linkedResources")}
+        />
+      )}
+      {modals.checklist && (hasHighlightedIssue || modalIssueId) && (
+        <ViewIssueChecklistModal
+          issueId={modalIssueId}
+          onClose={() => closeModal("checklist")}
         />
       )}
     </>

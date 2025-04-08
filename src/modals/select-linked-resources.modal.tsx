@@ -180,14 +180,14 @@ export const SelectLinkedResourcesModal = ({
         {"What do you want to open?".padEnd(maxLength - 3, " ")}
       </Text>
       <PaddedText
-        maxLength={maxLength}
+        length={maxLength}
         text={`   ${focused === 0 ? "> " : " "}${options[0]?.label}`}
         textProps={focused === 0 ? { color: "blue" } : { color: undefined }}
       />
-      <PaddedText maxLength={maxLength} text="" />
-      <PaddedText maxLength={maxLength} text="   Merge requests:" />
+      <PaddedText length={maxLength} />
+      <PaddedText length={maxLength} text="   Merge requests:" />
       {isLoading ? (
-        <PaddedText maxLength={maxLength} text="    Loading..." />
+        <PaddedText length={maxLength} text="    Loading..." />
       ) : mergeRequests?.length ? (
         options.slice(1).map((option, index) => {
           const text =
@@ -206,7 +206,7 @@ export const SelectLinkedResourcesModal = ({
           );
         })
       ) : (
-        <PaddedText maxLength={maxLength} text="    No merge requests" />
+        <PaddedText length={maxLength} text="    No merge requests" />
       )}
       <Text>{"".padEnd(maxLength, " ")}</Text>
     </Box>

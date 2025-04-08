@@ -24,6 +24,12 @@ const envVariables = z.object({
   branchFormat: z.string().optional(),
   boards: z.record(z.object({ jqlPrefix: z.string() })).optional(),
   onboarded: z.boolean(),
+  theme: z
+    .object({
+      innerModalBorder: z.string().optional().default("blue"),
+    })
+    .optional()
+    .default({}),
 });
 
 export type Configuration = z.infer<typeof envVariables>;
