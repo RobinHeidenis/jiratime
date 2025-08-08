@@ -104,7 +104,6 @@ export const SelectLinkedResourcesModal = ({
     () => {
       setFocused((prev) => Math.max(0, prev - 1));
     },
-    [],
   );
 
   useKeybind(
@@ -154,7 +153,6 @@ export const SelectLinkedResourcesModal = ({
       name: "Close",
     },
     onClose,
-    [],
   );
 
   return (

@@ -56,7 +56,6 @@ export const SelectUsersModal = ({
     () => {
       setFocused((prev) => Math.max(0, prev - 1));
     },
-    [],
   );
 
   useKeybind(
@@ -97,7 +96,6 @@ export const SelectUsersModal = ({
       name: "Close",
     },
     onClose,
-    [],
   );
 
   return (

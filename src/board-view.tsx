@@ -156,7 +156,6 @@ export const BoardView = () => {
       name: "Filter users",
     },
     () => setSelectUsersModalOpen(true),
-    [],
   );
 
   useKeybind(
@@ -206,7 +205,6 @@ export const BoardView = () => {
     () => {
       openModal("moveIssue");
     },
-    [],
   );
 
   useKeybind(
@@ -218,7 +216,6 @@ export const BoardView = () => {
     () => {
       openModal("updateAssignee");
     },
-    [],
   );
 
   useKeybind(
@@ -230,7 +227,6 @@ export const BoardView = () => {
     () => {
       openModal("linkedResources");
     },
-    [],
   );
 
   useKeybind(
