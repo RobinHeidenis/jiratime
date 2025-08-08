@@ -1,16 +1,19 @@
-import type { Key } from "ink";
+import type { Key as InkKey } from "ink";
 import { keybindReducerAtom } from "../../atoms/keybinds.atom.js";
 import { store } from "../../atoms/store.js";
 
-type Alias = string | { key: string; modifiers?: ReadonlyArray<keyof Key> };
+export type InkModifier = Exclude<ModifierKey, "alt"> | keyof InkKey;
+
+type Alias = { key: string; modifiers?: ReadonlyArray<InkModifier> };
+
+export type ModifierKey = "ctrl" | "shift" | "alt";
 
 export type Keybind = {
   key: string;
-  modifiers?: ReadonlyArray<keyof Key>;
+  modifiers?: ReadonlyArray<InkModifier>;
   aliases?: readonly Alias[];
   name: string;
   handler: () => void;
-  when?: () => boolean;
   description?: string;
   hidden?: boolean;
 };

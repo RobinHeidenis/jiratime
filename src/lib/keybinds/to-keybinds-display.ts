@@ -7,6 +7,12 @@ export const toKeybindsDisplay = (
 ) => {
   return keybinds
     .filter((keybind) => !keybind.hidden)
-    .map((keybind) => `${keybind.name}: ${keybind.key}`)
+    .map((keybind) => {
+      if (keybind.modifiers?.includes("escape")) {
+        return `${keybind.name}: <esc>`;
+      }
+
+      return `${keybind.name}: ${keybind.key}`;
+    })
     .join(" | ");
 };

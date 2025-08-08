@@ -1,7 +1,7 @@
 import { Spinner } from "@inkjs/ui";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { Box, Text } from "ink";
-import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useMemo, useState } from "react";
 import { useBoardQuery } from "./api/get-board.query.js";
 import { useIssueQuery } from "./api/get-issues.query.js";
@@ -18,15 +18,14 @@ import {
   modalsAtom,
   openModal,
 } from "./atoms/modals.atom.js";
-import { store } from "./atoms/store.js";
 import { viewedIssueAtom } from "./atoms/viewed-issue.atom.js";
 import { Board } from "./board.js";
 import { SearchInput } from "./components/search.js";
 import { env } from "./env.js";
-import { useKeybinds } from "./hooks/use-keybinds.js";
+import { useKeybind } from "./hooks/use-keybind.js";
 import { copyBranchName } from "./keyboard-handlers/copy-branch-name.js";
 import { copyIssueKey } from "./keyboard-handlers/copy-issue-key.js";
-import { CONFIRM_KEY } from "./lib/keybinds/keys.js";
+import { CommonKey } from "./lib/keybinds/keys.js";
 import { SelectLaneModal } from "./modals/select-lane-modal.js";
 import { SelectLinkedResourcesModal } from "./modals/select-linked-resources.modal.js";
 import { SelectPriorityModal } from "./modals/select-priority-modal.js";
@@ -36,12 +35,13 @@ import { ViewIssueModal } from "./modals/view-issue-modal.js";
 import type { JiraUser } from "./types/jira-user.js";
 
 const myAccountId = env.JIRA_ACCOUNT_ID;
-const byMeFilterAtom = atom(false);
 
 export const BoardView = () => {
   const { data: board } = useBoardQuery();
   const { data: issues } = useIssueQuery(board?.filter.jql);
   const { mutate: updateIssue } = useUpdateIssueMutation();
+
+  const [developedByMeFilter, setDevelopedByMeFilter] = useState(false);
 
   const isFetching = useIsFetching();
   const [filteredUsers, setFilteredUsers] = useState<JiraUser[]>([]);
@@ -49,15 +49,16 @@ export const BoardView = () => {
   const modals = useAtomValue(modalsAtom);
   const [boardSearch, setBoardSearch] = useAtom(boardSearchAtom);
   const resetBoardSearch = useSetAtom(resetBoardSearchAtom);
-  const hasHighlightedIssue = !!useAtomValue(highlightedIssueAtom).id;
-  const developedByMeFilter = useAtomValue(byMeFilterAtom);
+
+  const [highlightedIssue, setHighlightedIssue] = useAtom(highlightedIssueAtom);
+  const hasHighlightedIssue = !!highlightedIssue.id;
 
   const [searchState, setSearchState] = useAtom(boardSearchStateAtom);
   const [modalIssueId, setModalIssueId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
-  const viewedIssue = useAtomValue(viewedIssueAtom);
+  const [viewedIssue, setViewedIssue] = useAtom(viewedIssueAtom);
 
   const usersById: Map<string, JiraUser> = useMemo(() => {
     if (!issues) {
@@ -112,137 +113,168 @@ export const BoardView = () => {
 
     const users = filteredUsers.length ? filteredUsers : allUsers;
 
-    return `Selected users: ${users
-      .map((user) => user.displayName.split(" ")[0])
-      .join(", ")}`;
+    return `Selected users: ${users.map((user) => user.displayName.split(" ")[0]).join(", ")}`;
   }, [filteredUsers, allUsers, developedByMeFilter]);
 
-  useKeybinds(
-    { view: "BoardView" },
-    (register) => {
-      register({
-        key: "/",
-        name: "Search",
-        handler: () => {
-          const searchState = store.get(boardSearchStateAtom);
-          if (searchState === "disabled") {
-            store.set(boardSearchStateAtom, "active");
-          }
-        },
-      });
+  const view = "BoardView";
 
-      register({
-        ...CONFIRM_KEY,
-        name: "View issue",
-        hidden: true,
-        when: () =>
-          !!store.get(highlightedIssueAtom).id &&
-          store.get(boardSearchStateAtom) !== "active",
-        handler: () => {
-          const selectedIssue = store.get(highlightedIssueAtom);
+  useKeybind(
+    "/",
+    {
+      view,
+      name: "Search",
+    },
+    () => {
+      if (searchState === "disabled") {
+        setSearchState("active");
+      }
+    },
+    [searchState, setSearchState],
+  );
 
-          store.set(viewedIssueAtom, selectedIssue.key);
-        },
-      });
-
-      register({
-        key: "u",
-        name: "Filter users",
-        handler: () => setSelectUsersModalOpen(true),
-      });
-
-      if (me) {
-        register({
-          key: "M",
-          modifiers: ["shift"],
-          name: "Assigned to me",
-          handler: () =>
-            setFilteredUsers((current) => {
-              if (current.length === 1 && current[0] === me) {
-                return [];
-              }
-
-              return [me];
-            }),
-        });
-
-        register({
-          key: "B",
-          modifiers: ["shift"],
-          name: "By me",
-          handler: () => {
-            store.set(byMeFilterAtom, (current) => !current);
-          },
-        });
+  useKeybind(
+    CommonKey.Confirm,
+    {
+      view,
+      name: "View issue",
+      hidden: true,
+    },
+    () => {
+      if (!highlightedIssue || searchState === "active") {
+        return;
       }
 
-      register({
-        key: "m",
-        name: "Move issue",
-        handler: () => {
-          openModal("moveIssue");
-        },
-      });
+      setViewedIssue(highlightedIssue.key);
+    },
+    [setViewedIssue, highlightedIssue, searchState],
+  );
 
-      register({
-        key: "a",
-        name: "Change assignee",
-        handler: () => {
-          openModal("updateAssignee");
-        },
-      });
+  useKeybind(
+    "u",
+    {
+      view,
+      name: "Filter users",
+    },
+    () => setSelectUsersModalOpen(true),
+  );
 
-      register({
-        key: "o",
-        name: "Linked resources",
-        handler: () => {
-          openModal("linkedResources");
-        },
-      });
+  useKeybind(
+    "shift + m",
+    {
+      view,
+      name: "Assigned to me",
+    },
+    () => {
+      if (!me) {
+        return;
+      }
 
-      register({
-        key: "y",
-        name: "Copy ticket number",
-        hidden: true,
-        handler: () => {
-          const highlightedIssue = store.get(highlightedIssueAtom);
+      setFilteredUsers((current) => {
+        if (current.length === 1 && current[0] === me) {
+          return [];
+        }
 
-          if (!highlightedIssue?.key) {
-            return;
-          }
-
-          copyIssueKey({ key: highlightedIssue.key });
-        },
-      });
-
-      register({
-        key: "Y",
-        modifiers: ["shift"],
-        name: "Copy branch name",
-        hidden: true,
-        handler: () => {
-          const highlightedIssue = store.get(highlightedIssueAtom);
-
-          if (!highlightedIssue) {
-            return;
-          }
-
-          copyBranchName(
-            highlightedIssue.key!,
-            highlightedIssue.issueType!,
-            highlightedIssue.summary!,
-          );
-        },
-      });
-
-      register({
-        key: "R",
-        modifiers: ["shift"],
-        name: "Refresh",
-        handler: () => queryClient.invalidateQueries(),
+        return [me!];
       });
     },
     [me],
+  );
+
+  useKeybind(
+    "shift + b",
+    {
+      view,
+      name: "By me",
+    },
+    () => {
+      if (!me) {
+        return;
+      }
+
+      setDevelopedByMeFilter((current) => !current);
+    },
+    [me],
+  );
+
+  useKeybind(
+    "m",
+    {
+      view,
+      name: "Move issue",
+    },
+    () => {
+      openModal("moveIssue");
+    },
+  );
+
+  useKeybind(
+    "a",
+    {
+      view,
+      name: "Change assignee",
+    },
+    () => {
+      openModal("updateAssignee");
+    },
+  );
+
+  useKeybind(
+    "o",
+    {
+      view,
+      name: "Linked resources",
+    },
+    () => {
+      openModal("linkedResources");
+    },
+  );
+
+  useKeybind(
+    "y",
+    {
+      view,
+      name: "Copy ticket number",
+      hidden: true,
+    },
+    () => {
+      if (!highlightedIssue?.key) {
+        return;
+      }
+
+      copyIssueKey({ key: highlightedIssue.key });
+    },
+    [highlightedIssue],
+  );
+
+  useKeybind(
+    "shift + y",
+    {
+      view,
+      name: "Copy branch name",
+      hidden: true,
+    },
+    () => {
+      if (!highlightedIssue?.key) {
+        return;
+      }
+
+      copyBranchName(
+        highlightedIssue.key,
+        highlightedIssue.issueType!,
+        highlightedIssue.summary!,
+      );
+    },
+    [highlightedIssue],
+  );
+
+  useKeybind(
+    "shift + r",
+    {
+      view,
+      name: "Refresh",
+    },
+    () => queryClient.invalidateQueries(),
+    [queryClient],
   );
 
   const onOpenModal = (type: ModalKey, issueId: string) => {

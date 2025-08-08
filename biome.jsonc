@@ -24,7 +24,19 @@
         "noNonNullAssertion": "off"
       },
       "correctness": {
-        "noUnusedImports": "error"
+        "noUnusedImports": "error",
+        "useExhaustiveDependencies": {
+          "level": "error",
+          "options": {
+            "hooks": [
+              {
+                "name": "useKeybind",
+                "closureIndex": 2,
+                "dependenciesIndex": 3
+              }
+            ]
+          }
+        }
       }
     }
   },

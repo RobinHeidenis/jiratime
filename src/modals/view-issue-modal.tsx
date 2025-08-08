@@ -1,29 +1,24 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Box, Text } from "ink";
-import { atom, useStore } from "jotai";
-import { useAtomValue } from "jotai";
-import { useEffect } from "react";
+import { useSetAtom } from "jotai";
+import { useState } from "react";
 import { prefetchIssueMergeRequests } from "../api/get-issue-merge-requests.query.js";
 import { prefetchIssueTransitions } from "../api/get-issue-transitions.query.js";
-import type { Issue } from "../api/get-issues.query.js";
 import { prefetchPriorities } from "../api/get-priorities.query.js";
 import { prefetchUsers } from "../api/get-users.query.js";
 import type { ModalKey } from "../atoms/modals.atom.js";
 import { viewedIssueAtom } from "../atoms/viewed-issue.atom.js";
 import { env } from "../env.js";
-import { useKeybinds } from "../hooks/use-keybinds.js";
+import { useKeybind } from "../hooks/use-keybind.js";
 import { useViewedIssue } from "../hooks/use-viewed-issue.js";
 import { priorityMap } from "../issue.js";
 import { copyBranchName } from "../keyboard-handlers/copy-branch-name.js";
 import { copyIssueKey } from "../keyboard-handlers/copy-issue-key.js";
 import { ADFRenderer } from "../lib/adf/adf-renderer.js";
 import type { TopLevelNode } from "../lib/adf/nodes.js";
-import { CLOSE_KEY, DOWN_KEY, UP_KEY } from "../lib/keybinds/keys.js";
+import { CommonKey } from "../lib/keybinds/keys.js";
 import { PaddedText } from "../padded-text.js";
 import { useStdoutDimensions } from "../useStdoutDimensions.js";
-
-const issueAtom = atom<Issue | null>(null);
-const topOffsetAtom = atom(0);
 
 const MINIMUM_LINES = 33;
 const VIEWPORT_HEIGHT = 35;
@@ -41,8 +36,8 @@ export const ViewIssueModal = ({
   const queryClient = useQueryClient();
 
   const [columns, rows] = useStdoutDimensions();
-  const topOffset = useAtomValue(topOffsetAtom);
-  const store = useStore();
+  const [topOffset, setTopOffset] = useState(0);
+  const setViewedIssue = useSetAtom(viewedIssueAtom);
 
   const description = issue
     ? new ADFRenderer(MAX_LINE_WIDTH, MINIMUM_LINES).render(
@@ -57,150 +52,168 @@ export const ViewIssueModal = ({
       )
     : [];
 
-  useEffect(() => {
-    store.set(issueAtom, issue);
-    store.set(topOffsetAtom, 0); // Reset scroll offset when issue changes
+  const view = "ViewIssueModal";
 
-    return () => {
-      store.set(issueAtom, null);
-    };
-  }, [store, issue]);
-
-  useKeybinds(
-    { view: "ViewIssueModal", unregister: true },
-    (register) => {
-      register({
-        key: "m",
-        name: "Move issue",
-        handler: () => {
-          openModal("moveIssue", store.get(issueAtom)!.id);
-        },
-      });
-
-      register({
-        key: "a",
-        name: "Update assignee",
-        handler: () => {
-          openModal("updateAssignee", store.get(issueAtom)!.id);
-        },
-      });
-
-      register({
-        key: "p",
-        name: "Update priority",
-        handler: () => {
-          openModal("updatePriority", store.get(issueAtom)!.id);
-        },
-      });
-
-      register({
-        ...DOWN_KEY,
-        aliases: [
-          { key: "", modifiers: ["downArrow"] },
-          { key: "d", modifiers: ["ctrl"] },
-        ],
-        name: "Scroll down",
-        hidden: true,
-        when: () => description.length > VIEWPORT_HEIGHT,
-        handler: () => {
-          store.set(topOffsetAtom, (prev) =>
-            Math.min(
-              prev + SMALL_SCROLL_INCREMENT,
-              description.length - MINIMUM_LINES,
-            ),
-          );
-        },
-      });
-
-      register({
-        ...UP_KEY,
-        aliases: [
-          { key: "", modifiers: ["upArrow"] },
-          { key: "u", modifiers: ["ctrl"] },
-        ],
-        name: "Scroll up",
-        hidden: true,
-        when: () => description.length > VIEWPORT_HEIGHT,
-        handler: () => {
-          store.set(topOffsetAtom, (prev) =>
-            Math.max(prev - SMALL_SCROLL_INCREMENT, 0),
-          );
-        },
-      });
-
-      register({
-        key: "d",
-        modifiers: ["ctrl"],
-        name: "Scroll down (fast)",
-        hidden: true,
-        when: () => description.length > VIEWPORT_HEIGHT,
-        handler: () => {
-          store.set(topOffsetAtom, (prev) => {
-            return Math.min(
-              prev + LARGE_SCROLL_INCREMENT,
-              description.length - MINIMUM_LINES,
-            );
-          });
-        },
-      });
-
-      register({
-        key: "u",
-        modifiers: ["ctrl"],
-        name: "Scroll up (fast)",
-        hidden: true,
-        when: () => description.length > VIEWPORT_HEIGHT,
-        handler: () => {
-          store.set(topOffsetAtom, (prev) =>
-            Math.max(prev - LARGE_SCROLL_INCREMENT, 0),
-          );
-        },
-      });
-
-      register({
-        key: "o",
-        name: "Linked resources",
-        handler: () => {
-          openModal("linkedResources", store.get(issueAtom)!.id);
-        },
-      });
-
-      register({
-        key: "y",
-        name: "Copy ticket number",
-        handler: () => {
-          copyIssueKey(store.get(issueAtom)!);
-        },
-      });
-
-      register({
-        key: "Y",
-        modifiers: ["shift"],
-        name: "Copy branch name",
-        handler: () => {
-          const issue = store.get(issueAtom)!;
-
-          if (!issue) {
-            return;
-          }
-
-          copyBranchName(
-            issue.key,
-            issue.fields.issuetype.name,
-            issue.fields.summary,
-          );
-        },
-      });
-
-      register({
-        ...CLOSE_KEY,
-        name: "Close",
-        handler: () => {
-          store.set(viewedIssueAtom, null);
-        },
-      });
+  useKeybind(
+    "m",
+    {
+      view,
+      name: "Move issue",
     },
-    [],
+    () => {
+      openModal("moveIssue", issue!.id);
+    },
+    [issue, openModal],
+  );
+
+  useKeybind(
+    "a",
+    {
+      view,
+      name: "Update assignee",
+    },
+    () => {
+      openModal("updateAssignee", issue!.id);
+    },
+    [issue, openModal],
+  );
+
+  useKeybind(
+    "p",
+    {
+      view,
+      name: "Update priority",
+    },
+    () => {
+      openModal("updatePriority", issue!.id);
+    },
+    [issue, openModal],
+  );
+
+  useKeybind(
+    ["j", "downArrow"], // Don't use CommonKey.Down, excluding ctrl+n here
+    {
+      view,
+      name: "Scroll down",
+      hidden: true,
+    },
+    () => {
+      if (description.length > VIEWPORT_HEIGHT) {
+        setTopOffset((prev) =>
+          Math.min(
+            prev + SMALL_SCROLL_INCREMENT,
+            description.length - MINIMUM_LINES,
+          ),
+        );
+      }
+    },
+    [description],
+  );
+
+  useKeybind(
+    ["k", "upArrow"], // Don't use CommonKey.Up, excluding ctrl+p here
+    {
+      view,
+      name: "Scroll up",
+      hidden: true,
+    },
+    () => {
+      if (description.length > VIEWPORT_HEIGHT) {
+        setTopOffset((prev) => Math.max(prev - SMALL_SCROLL_INCREMENT, 0));
+      }
+    },
+    [description],
+  );
+
+  useKeybind(
+    "ctrl + d",
+    {
+      view,
+      name: "Scroll down (fast)",
+      hidden: true,
+    },
+    () => {
+      if (description.length > VIEWPORT_HEIGHT) {
+        setTopOffset((prev) =>
+          Math.min(
+            prev + LARGE_SCROLL_INCREMENT,
+            description.length - MINIMUM_LINES,
+          ),
+        );
+      }
+    },
+    [description],
+  );
+
+  useKeybind(
+    "ctrl + u",
+    {
+      view,
+      name: "Scroll up (fast)",
+      hidden: true,
+    },
+    () => {
+      if (description.length > VIEWPORT_HEIGHT) {
+        setTopOffset((prev) => Math.max(prev - LARGE_SCROLL_INCREMENT, 0));
+      }
+    },
+    [description],
+  );
+
+  useKeybind(
+    "o",
+    {
+      view,
+      name: "Linked resources",
+    },
+    () => {
+      openModal("linkedResources", issue!.id);
+    },
+    [openModal, issue],
+  );
+
+  useKeybind(
+    "y",
+    {
+      view,
+      name: "Copy ticket number",
+    },
+    () => {
+      copyIssueKey(issue!);
+    },
+    [issue],
+  );
+
+  useKeybind(
+    "shift + y",
+    {
+      view,
+      name: "Copy branch name",
+    },
+    () => {
+      if (!issue) {
+        return;
+      }
+
+      copyBranchName(
+        issue.key,
+        issue.fields.issuetype.name,
+        issue.fields.summary,
+      );
+    },
+    [issue],
+  );
+
+  useKeybind(
+    CommonKey.Close,
+    {
+      view,
+      name: "Close",
+    },
+    () => {
+      setViewedIssue(null);
+    },
+    [setViewedIssue],
   );
 
   if (!issue) {
