@@ -6,5 +6,5 @@ export const CommonKey = {
   Left: ["h", "leftArrow"],
   Right: ["l", "rightArrow"],
   Confirm: ["return", "ctrl + y"],
-  Close: ["q", "escape"],
+  Close: ["escape"],
 } as const satisfies Record<string, ParsableKeybind>;
