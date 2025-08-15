@@ -66,18 +66,31 @@ export const BoardView = () => {
     }
 
     return new Map(
-      issues
-        .filter((issue) => issue.fields.assignee.displayName !== "Unassigned")
-        .map((issue) => [
-          issue.fields.assignee.accountId,
-          issue.fields.assignee,
-        ]),
+      issues.map((issue) => [
+        issue.fields.assignee.accountId,
+        issue.fields.assignee,
+      ]),
     );
   }, [issues]);
 
   const me = myAccountId ? usersById.get(myAccountId) : undefined;
 
-  const allUsers = Array.from(usersById.values());
+  const allUsers = useMemo(
+    () =>
+      // Move Unassigned to the bottom
+      Array.from(usersById.values()).toSorted((a, b) => {
+        if (a.displayName.toLocaleLowerCase() === "unassigned") {
+          return 1;
+        }
+
+        if (b.displayName.toLocaleLowerCase() === "unassigned") {
+          return -1;
+        }
+
+        return a.displayName.localeCompare(b.displayName);
+      }),
+    [usersById],
+  );
 
   const filteredIssues = useMemo(() => {
     let results = issues ?? [];
