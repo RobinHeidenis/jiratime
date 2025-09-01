@@ -30,6 +30,7 @@ import type {
   TableHeaderNode,
   TableNode,
   TableRowNode,
+  TaskListNode,
   TextNode,
   TopLevelNode,
 } from "./nodes.js";
@@ -104,6 +105,10 @@ export class ADFRenderer {
         return this.rule(node);
       case "table":
         return [];
+      case "taskList":
+        return this.taskList(node);
+      default:
+        return [];
     }
   }
 
@@ -143,8 +148,8 @@ export class ADFRenderer {
     return string;
   }
 
-  public pad(line: string, maxLength = this.maxLineWidth): string {
-    const cleanLength = this.getLength(line);
+  public pad(line: string | undefined, maxLength = this.maxLineWidth): string {
+    const cleanLength = line === undefined ? maxLength : this.getLength(line);
     const padding = " ".repeat(Math.max(0, maxLength - cleanLength));
     return `${line}${padding}`;
   }
@@ -435,6 +440,13 @@ export class ADFRenderer {
 
   private rule(_node: RuleNode): string[] {
     return [chalk.gray.strikethrough(this.pad(""))];
+  }
+
+  private taskList(node: TaskListNode): string[] {
+    return node.content.map(
+      (taskItemNode) =>
+        ` ${taskItemNode.attrs.state === "DONE" ? "\u2611" : "\u2610"} ${this.renderInlineNodes(taskItemNode.content)}`,
+    );
   }
 
   private status(node: StatusNode): string {

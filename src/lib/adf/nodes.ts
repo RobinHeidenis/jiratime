@@ -249,6 +249,23 @@ export interface TableRowNode {
   content: (TableCellNode | TableHeaderNode)[];
 }
 
+export interface TaskListNode {
+  type: "taskList";
+  attrs?: {
+    localId: string;
+  };
+  content: TaskItemNode[];
+}
+
+export interface TaskItemNode {
+  type: "taskItem";
+  attrs: {
+    localId?: string;
+    state: "TODO" | "DONE";
+  };
+  content: TextNode[];
+}
+
 export interface TextNode {
   type: "text";
   text: string;
@@ -267,7 +284,8 @@ export type TopLevelNode =
   | PanelNode
   | ParagraphNode
   | RuleNode
-  | TableNode;
+  | TableNode
+  | TaskListNode;
 
 export type ChildBlockNode =
   | ListItemNode
