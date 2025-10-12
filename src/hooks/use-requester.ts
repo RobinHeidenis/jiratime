@@ -1,9 +1,9 @@
-import { makeRequester } from "../api/request.js";
+import { makeRequester } from "../api/request.ts";
 
-export const useRequester = (jiraUrl: URL | null, apiToken: string) => {
+export const useRequester = (jiraUrl: string | null, apiToken: string) => {
   if (!jiraUrl) {
     return null;
   }
 
-  return makeRequester(jiraUrl, apiToken);
+  return makeRequester(new URL(jiraUrl), apiToken);
 };

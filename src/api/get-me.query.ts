@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { makeLogger } from "../lib/logger.js";
-import type { ApiRequester } from "./request.js";
+import { makeLogger } from "../lib/logger.ts";
+import type { ApiRequester } from "./request.ts";
 
 const logger = makeLogger("GetMe");
 
@@ -23,11 +23,11 @@ const fetchMe = async (request: ApiRequester) => {
   }
 };
 
-export const useMeQuery = (request: ApiRequester) => {
-  return useQuery({
+export const useMeQuery = (request: ApiRequester | null | undefined) =>
+  useQuery({
     queryKey: ["me"],
-    queryFn: () => fetchMe(request),
+    enabled: !!request,
+    queryFn: () => fetchMe(request!),
     refetchOnReconnect: false,
     refetchInterval: false,
   });
-};

@@ -1,6 +1,6 @@
-import { env } from "../env.js";
-import { makeLogger } from "../lib/logger.js";
-import { tryParseJson } from "../lib/utils/try-parse-json.js";
+import { env } from "../env.ts";
+import { makeLogger } from "../lib/logger.ts";
+import { tryParseJson } from "../lib/utils/try-parse-json.ts";
 
 export const HOUR = 1000 * 60 * 60;
 
@@ -8,8 +8,9 @@ export type ApiRequester = ReturnType<typeof makeRequester>;
 
 const logger = makeLogger("Request");
 
-export const makeRequester = (jiraUrl: URL, apiToken: string) => {
-  return async (endpoint: string, customOptions?: RequestInit) => {
+export const makeRequester =
+  (jiraUrl: URL, apiToken: string) =>
+  async (endpoint: string, customOptions?: RequestInit) => {
     {
       const options: RequestInit = {
         method: "GET",
@@ -52,7 +53,6 @@ export const makeRequester = (jiraUrl: URL, apiToken: string) => {
       return JSON.parse(responseText);
     }
   };
-};
 
 const noopRequester: ApiRequester = async () => {
   logger.debug("No requester available");

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.2.5/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -7,24 +7,28 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["dist/**", "node_modules/**"]
+    "includes": ["**", "!dist", "!node_modules"]
   },
   "formatter": {
     "enabled": true,
     "indentStyle": "space"
   },
-  "organizeImports": {
-    "enabled": true
-  },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true,
-      "style": {
-        "noNonNullAssertion": "off"
-      },
       "correctness": {
         "noUnusedImports": "error",
+        "useJsxKeyInIterable": "error",
+        "useUniqueElementIds": "error",
+        "noNestedComponentDefinitions": "error",
+        "noReactPropAssignments": "error",
+        "noUndeclaredDependencies": "error",
+        "noUndeclaredVariables": "error",
+        "useHookAtTopLevel": "error",
+        "useImportExtensions": "error",
+        "useJsonImportAttributes": "error",
+        "noChildrenProp": "off",
         "useExhaustiveDependencies": {
           "level": "error",
           "options": {
@@ -37,12 +41,84 @@
             ]
           }
         }
+      },
+      "nursery": {
+        "noUnnecessaryConditions": "error",
+        "noUnresolvedImports": "error",
+        "noFloatingPromises": "error",
+        "noImportCycles": "error",
+        "noMisusedPromises": "error",
+        "noNonNullAssertedOptionalChain": "error",
+        "noReactForwardRef": "error",
+        "noSecrets": "error",
+        "useConsistentArrowReturn": "error",
+        "useExhaustiveSwitchCases": "error",
+        "useReactFunctionComponents": "error",
+        "noUnusedExpressions": "error",
+        "noUselessCatchBinding": "error",
+        "noUselessUndefined": "error"
+      },
+      "complexity": {
+        "noUselessStringConcat": "error",
+        "useSimplifiedLogicExpression": "error",
+        "useWhile": "error"
+      },
+      "performance": {
+        "noBarrelFile": "error",
+        "noReExportAll": "error"
+      },
+      "suspicious": {
+        "noAlert": "error",
+        "noBitwiseOperators": "error",
+        "noEmptyBlockStatements": "error",
+        "noEvolvingTypes": "error",
+        "noUnassignedVariables": "error",
+        "noVar": "error",
+        "useAwait": "error",
+        "useErrorMessage": "error"
+      },
+      "style": {
+        "noInferrableTypes": "error",
+        "noNegationElse": "error",
+        "noSubstr": "error",
+        "noUnusedTemplateLiteral": "error",
+        "noUselessElse": "error",
+        "useAtIndex": "error",
+        "useBlockStatements": "error",
+        "useCollapsedIf": "error",
+        "useConsistentArrayType": "error",
+        "useConsistentBuiltinInstantiation": "error",
+        "useConsistentCurlyBraces": "error",
+        "useConsistentMemberAccessibility": "error",
+        "useConsistentObjectDefinitions": "error",
+        "useDefaultParameterLast": "error",
+        "useFragmentSyntax": "error",
+        "useNumberNamespace": "error",
+        "useNumericSeparators": "error",
+        "useObjectSpread": "error",
+        "useReadonlyClassProperties": "error",
+        "useSelfClosingElements": "error",
+        "useShorthandAssign": "error",
+        "useSingleVarDeclarator": "error",
+        "useThrowNewError": "error",
+        "useTrimStartEnd": "error",
+        "noEnum": "error",
+        "noExportedImports": "error",
+        "noNonNullAssertion": "off"
       }
     }
   },
   "javascript": {
     "formatter": {
       "quoteStyle": "double"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
     }
   }
 }

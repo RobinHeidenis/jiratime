@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CONFIG_LOCATION } from "./lib/constants.js";
+import { CONFIG_LOCATION } from "./lib/constants.ts";
 
 const configFile = await Bun.file(CONFIG_LOCATION)
   .json()
@@ -12,17 +12,14 @@ const configFile = await Bun.file(CONFIG_LOCATION)
 
 const envVariables = z.object({
   JIRA_API_KEY: z.string(),
-  JIRA_BASE_URL: z
-    .string()
-    .url()
-    .transform((v) => new URL(v)),
+  JIRA_BASE_URL: z.url().transform((v) => new URL(v)),
   JIRA_BOARD_ID: z.string().or(z.number()),
   JIRA_ACCOUNT_ID: z.string().optional(),
   JIRA_ACCOUNT_NAME: z.string().optional(),
   STORY_POINTS_FIELD: z.string(),
   DEVELOPER_FIELD: z.string().optional(),
   branchFormat: z.string().optional(),
-  boards: z.record(z.object({ jqlPrefix: z.string() })).optional(),
+  boards: z.record(z.string(), z.object({ jqlPrefix: z.string() })).optional(),
   onboarded: z.boolean(),
 });
 
